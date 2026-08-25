@@ -54,7 +54,6 @@ public sealed class CharacterCache
         }
 
         await using var stream = File.OpenRead(_path);
-
         var cacheFile = await JsonSerializer.DeserializeAsync<CharacterCacheFile>(stream, JsonOptions, cancellationToken);
 
         if (cacheFile is null)
@@ -76,6 +75,11 @@ public sealed class CharacterCache
         }
 
         return null;
+    }
+
+    public KeyValuePair<string, CachedCharacter>[] GetAll()
+    {
+        return [.. _characters];
     }
 
     public void Set(string guid, CharacterProfile profile, CharacterRefreshSource source)
@@ -103,18 +107,9 @@ public sealed class CharacterCache
 
         try
         {
-            await using (var stream = new FileStream(
-                temporaryPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None))
+            await using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await JsonSerializer.SerializeAsync(
-                    stream,
-                    cacheFile,
-                    JsonOptions,
-                    cancellationToken);
-
+                await JsonSerializer.SerializeAsync(stream, cacheFile, JsonOptions, cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
 
@@ -153,16 +148,7 @@ public sealed class CharacterCache
         public CachedCharacter ToCachedCharacter()
         {
             return new CachedCharacter(
-                new CharacterProfile(
-                    Name,
-                    Realm,
-                    RealmSlug,
-                    Region,
-                    Class,
-                    Specialization,
-                    Race,
-                    Level,
-                    ItemLevel),
+                new CharacterProfile(Name, Realm, RealmSlug, Region, Class, Specialization, Race, Level, ItemLevel),
                 LastRefresh,
                 LastRefreshSource);
         }
