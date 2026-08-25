@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WoWStreamOverlay.CombatLog/WoWStreamOverlay.CombatLog.csproj" />
+    <Project Path="src/WoWStreamOverlay/WoWStreamOverlay.csproj" />
+  </Folder>
+</Solution>
