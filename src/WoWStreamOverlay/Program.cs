@@ -38,14 +38,25 @@ if (string.IsNullOrWhiteSpace(locale))
     locale = "fr_FR";
 }
 
-using var httpClient = new HttpClient();
-var client = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
+var battleNetConfigured =
+    !string.IsNullOrWhiteSpace(clientId) &&
+    !string.IsNullOrWhiteSpace(clientSecret);
 
-var character = await client.GetCharacterProfileAsync("voljin", "shaigan");
-
-if (character is not null)
+if (!battleNetConfigured)
 {
-    Console.WriteLine($"Found Character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
+    Console.WriteLine("Battle.net integration is not configured.");
+}
+else
+{
+    using var httpClient = new HttpClient();
+    var client = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
+
+    var character = await client.GetCharacterProfileAsync("voljin", "shaigan");
+
+    if (character is not null)
+    {
+        Console.WriteLine($"Found Character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
+    }
 }
 
 var parser = new CombatLogParser();
