@@ -11,6 +11,27 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
+var charactersPath = configuration["Cache:CharactersPath"];
+
+if (string.IsNullOrWhiteSpace(charactersPath))
+{
+    charactersPath = "characters.json";
+}
+
+var characterCache = new CharacterCache(charactersPath);
+
+await characterCache.LoadAsync();
+
+var cachedCharacter = characterCache.Get("Player-510-001577CC");
+
+if (cachedCharacter is not null)
+{
+    Console.WriteLine(
+        $"Cached Character: {cachedCharacter.Profile.Name}, " +
+        $"Spec: {cachedCharacter.Profile.Specialization}, " +
+        $"iLvl: {cachedCharacter.Profile.ItemLevel}");
+}
+
 var clientId = configuration["BattleNet:ClientId"];
 var clientSecret = configuration["BattleNet:ClientSecret"];
 var region = configuration["BattleNet:Region"];
@@ -56,6 +77,15 @@ else
     if (character is not null)
     {
         Console.WriteLine($"Found Character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
+
+        const string guid = "Player-510-001577CC";
+
+        characterCache.Set(
+            guid,
+            character,
+            CharacterRefreshSource.BattleNet);
+
+        await characterCache.SaveAsync();
     }
 }
 
