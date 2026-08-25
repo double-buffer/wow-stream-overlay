@@ -18,16 +18,42 @@ if (string.IsNullOrWhiteSpace(charactersPath))
     charactersPath = "characters.json";
 }
 
+var statePath = configuration["State:Path"];
+
+if (string.IsNullOrWhiteSpace(statePath))
+{
+    statePath = "state.json";
+}
+
 var characterCache = new CharacterCache(charactersPath);
 await characterCache.LoadAsync();
 
+var gameStateStore = new GameStateStore(statePath);
+var gameState = await gameStateStore.LoadAsync();
+
 var clientId = configuration["BattleNet:ClientId"];
 var clientSecret = configuration["BattleNet:ClientSecret"];
-var region = configuration["BattleNet:Region"] ?? "eu";
-var locale = configuration["BattleNet:Locale"] ?? "fr_FR";
+var region = configuration["BattleNet:Region"];
+var locale = configuration["BattleNet:Locale"];
+
+if (string.IsNullOrWhiteSpace(region))
+{
+    region = "eu";
+}
+
+if (string.IsNullOrWhiteSpace(locale))
+{
+    locale = "fr_FR";
+}
+
+var refreshIntervalSeconds = 60;
+
+if (int.TryParse(configuration["BattleNet:CharacterRefreshIntervalSeconds"], out var configuredRefreshInterval) && configuredRefreshInterval > 0)
+{
+    refreshIntervalSeconds = configuredRefreshInterval;
+}
 
 using var httpClient = new HttpClient();
-
 BattleNetClient? battleNetClient = null;
 
 if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
@@ -39,7 +65,15 @@ else
     Console.WriteLine("Battle.net integration is not configured.");
 }
 
-var app = new WoWStreamOverlayApp(new CombatLogParser(), characterCache, battleNetClient);
+var app = new WoWStreamOverlayApp(
+    new CombatLogParser(),
+    characterCache,
+    battleNetClient,
+    gameState,
+    gameStateStore,
+    TimeSpan.FromSeconds(refreshIntervalSeconds));
+
+await app.RefreshCharacterCacheAsync();
 
 using var streamReader = new StreamReader("TestLog.txt");
 
