@@ -15,7 +15,7 @@ public class PlayerObservedTests
         Assert.Equal(ParseStatus.Parsed, result.Status);
         var eventValue = Assert.IsType<PlayerObservedEvent>(result.Event);
         Assert.Equal("Player-510-00626ADE", eventValue.Guid);
-        Assert.Equal("\"Naaruël-Vol'jin-EU\"", eventValue.Name);
+        Assert.Equal("Naaruël-Vol'jin-EU", eventValue.Name);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class PlayerObservedTests
         Assert.Equal(ParseStatus.Parsed, result.Status);
         var eventValue = Assert.IsType<PlayerObservedEvent>(result.Event);
         Assert.Equal("Player-510-00626ADE", eventValue.Guid);
-        Assert.Equal("\"Naaruël-Vol'jin-EU\"", eventValue.Name);
+        Assert.Equal("Naaruël-Vol'jin-EU", eventValue.Name);
     }
 
     [Fact]
