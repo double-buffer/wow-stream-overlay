@@ -1,0 +1,1 @@
+8/25/2026 08:10:32.0262  SPELL_AURA_APPLIED,Player-510-00626ADE,"Naaruël-Vol'jin-EU",0x511,0x80000000,Player-510-00626ADE,"Naaruël-Vol'jin-EU",0x511,0x80000000,21562,"Mot de pouvoir : Robustesse",0x2,BUFF

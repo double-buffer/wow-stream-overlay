@@ -3,4 +3,7 @@
     <Project Path="src/WoWStreamOverlay.CombatLog/WoWStreamOverlay.CombatLog.csproj" />
     <Project Path="src/WoWStreamOverlay/WoWStreamOverlay.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WoWStreamOverlay.CombatLog.Tests/WoWStreamOverlay.CombatLog.Tests.csproj" />
+  </Folder>
 </Solution>

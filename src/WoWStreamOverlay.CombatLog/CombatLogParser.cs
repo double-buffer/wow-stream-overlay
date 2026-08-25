@@ -119,7 +119,7 @@ public class CombatLogParser
         if (IsLocalPlayer(logData[ranges[3]]))
         {
             var guid = logData[ranges[1]].ToString();
-            var name = logData[ranges[2]].ToString();
+            var name = logData[ranges[2]].Trim('"').ToString();
 
             return new(ParseStatus.Parsed, new PlayerObservedEvent(guid, name));
         }
@@ -127,7 +127,7 @@ public class CombatLogParser
         if (IsLocalPlayer(logData[ranges[7]]))
         {
             var guid = logData[ranges[5]].ToString();
-            var name = logData[ranges[6]].ToString();
+            var name = logData[ranges[6]].Trim('"').ToString();
 
             return new(ParseStatus.Parsed, new PlayerObservedEvent(guid, name));
         }
