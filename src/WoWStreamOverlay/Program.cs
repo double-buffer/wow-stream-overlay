@@ -78,17 +78,14 @@ else
     {
         Console.WriteLine($"Found Character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
 
-        if (character is not null)
-        {
-            const string guid = "Player-510-001577CC";
+        const string guid = "Player-510-001577CC";
 
-            characterCache.Set(
-                guid,
-                character,
-                CharacterRefreshSource.BattleNet);
+        characterCache.Set(
+            guid,
+            character,
+            CharacterRefreshSource.BattleNet);
 
-            await characterCache.SaveAsync();
-        }
+        await characterCache.SaveAsync();
     }
 }
 
