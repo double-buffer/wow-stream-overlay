@@ -1,10 +1,9 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace WowStreamOverlay;
 
 /// <summary>
-/// Follows the active World of Warcraft combat log and yields complete lines as they are written.
+/// Follows the active World of Warcraft combat log and processes complete lines as they are written.
 /// </summary>
 public sealed class CombatLogReader
 {
@@ -18,7 +17,9 @@ public sealed class CombatLogReader
         _logsPath = logsPath;
     }
 
-    public async IAsyncEnumerable<string> ReadLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async Task ProcessLogFilesAsync(
+        Func<string, CancellationToken, Task> processLine,
+        CancellationToken cancellationToken = default)
     {
         var currentPath = FindLatestLogFile();
         var reader = currentPath is null ? null : TryOpenReader(currentPath, seekToEnd: true);
@@ -79,7 +80,7 @@ public sealed class CombatLogReader
 
                         if (lineBuffer.Length > 0)
                         {
-                            yield return lineBuffer.ToString();
+                            await processLine(lineBuffer.ToString(), cancellationToken);
                         }
 
                         lineBuffer.Clear();
