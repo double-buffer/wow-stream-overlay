@@ -54,19 +54,18 @@ public sealed class CombatLogTailer
 
                 if (read > 0)
                 {
-                    var data = buffer.AsSpan(0, read);
                     var lineStart = 0;
 
-                    for (var index = 0; index < data.Length; index++)
+                    for (var index = 0; index < read; index++)
                     {
-                        if (data[index] != '\n')
+                        if (buffer[index] != '\n')
                         {
                             continue;
                         }
 
-                        lineBuffer.Append(data[lineStart..index]);
+                        lineBuffer.Append(buffer, lineStart, index - lineStart);
 
-                        if (lineBuffer.Length > 0 && lineBuffer[^1] == '\r')
+                        if (lineBuffer.Length > 0 && lineBuffer[lineBuffer.Length - 1] == '\r')
                         {
                             lineBuffer.Length--;
                         }
@@ -80,9 +79,9 @@ public sealed class CombatLogTailer
                         lineStart = index + 1;
                     }
 
-                    if (lineStart < data.Length)
+                    if (lineStart < read)
                     {
-                        lineBuffer.Append(data[lineStart..]);
+                        lineBuffer.Append(buffer, lineStart, read - lineStart);
                     }
 
                     continue;
