@@ -1,2 +1,3 @@
-# wow-stream-overlay
-A lightweight, local, open-source World of Warcraft overlay system for OBS, powered by the WoW combat log.
+# WoW Stream Overlay
+
+A lightweight local overlay server for World of Warcraft streams.

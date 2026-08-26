@@ -3,7 +3,11 @@ using Microsoft.Extensions.Hosting;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
 
-Console.WriteLine("WoW Stream Overlay v0.1.0 · https://github.com/double-buffer/wow-stream-overlay");
+if (CommandLine.IsHelpRequest(args))
+{
+    CommandLine.PrintHelp();
+    return;
+}
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -11,6 +15,13 @@ var configuration = new ConfigurationBuilder()
     .AddUserSecrets(typeof(BattleNetClient).Assembly, optional: true)
     .AddEnvironmentVariables()
     .Build();
+
+if (await CommandLine.TryExecuteAsync(args, configuration))
+{
+    return;
+}
+
+Console.WriteLine($"{ApplicationInfo.Name} v{ApplicationInfo.Version} · {ApplicationInfo.RepositoryUrl}");
 
 var logsPath = configuration["Wow:LogsPath"];
 
