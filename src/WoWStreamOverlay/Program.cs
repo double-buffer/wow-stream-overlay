@@ -90,7 +90,42 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-var webServer = WebServer.Create(app.State);
+var overlays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+foreach (var overlay in configuration.GetSection("Overlays").GetChildren())
+{
+    var templatePath = overlay["Template"];
+
+    if (string.IsNullOrWhiteSpace(templatePath))
+    {
+        continue;
+    }
+
+    overlays[overlay.Key] = Path.IsPathRooted(templatePath)
+        ? templatePath
+        : Path.Combine(AppContext.BaseDirectory, templatePath);
+}
+
+var webHost = configuration["Web:Host"];
+
+if (string.IsNullOrWhiteSpace(webHost))
+{
+    webHost = WebServer.DefaultHost;
+}
+
+var webPort = WebServer.DefaultPort;
+var configuredWebPort = configuration["Web:Port"];
+
+if (!string.IsNullOrWhiteSpace(configuredWebPort))
+{
+    if (!int.TryParse(configuredWebPort, out webPort) || webPort < 1 || webPort > 65535)
+    {
+        Console.Error.WriteLine($"Error: Web:Port is invalid: {configuredWebPort}");
+        return;
+    }
+}
+
+var webServer = WebServer.Create(app.State, host: webHost, port: webPort, overlays: overlays);
 var combatLogReader = new CombatLogReader(logsPath);
 using var shutdownTokenSource = new CancellationTokenSource();
 

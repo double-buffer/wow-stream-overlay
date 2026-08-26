@@ -12,6 +12,9 @@ namespace WowStreamOverlay;
 /// <param name="Race">Character race.</param>
 /// <param name="Level">Character level.</param>
 /// <param name="ItemLevel">Equipped item level.</param>
+/// <param name="ClassName">Localized character class name.</param>
+/// <param name="SpecializationName">Localized active specialization name.</param>
+/// <param name="RaceName">Localized character race name.</param>
 public sealed record CharacterProfile(
     string Name,
     string Realm,
@@ -21,7 +24,29 @@ public sealed record CharacterProfile(
     CharacterSpecialization Specialization,
     CharacterRace Race,
     int Level,
-    int ItemLevel);
+    int ItemLevel,
+    string? ClassName = null,
+    string? SpecializationName = null,
+    string? RaceName = null)
+{
+    public string ClassColor => Class switch
+    {
+        CharacterClass.Warrior => "#C79C6E",
+        CharacterClass.Paladin => "#F48CBA",
+        CharacterClass.Hunter => "#AAD372",
+        CharacterClass.Rogue => "#FFF468",
+        CharacterClass.Priest => "#FFFFFF",
+        CharacterClass.DeathKnight => "#C41E3A",
+        CharacterClass.Shaman => "#0070DD",
+        CharacterClass.Mage => "#3FC7EB",
+        CharacterClass.Warlock => "#8788EE",
+        CharacterClass.Monk => "#00FF98",
+        CharacterClass.Druid => "#FF7C0A",
+        CharacterClass.DemonHunter => "#A330C9",
+        CharacterClass.Evoker => "#33937F",
+        _ => "#F4F4F5"
+    };
+}
 
 /// <summary>
 /// World of Warcraft playable character classes.

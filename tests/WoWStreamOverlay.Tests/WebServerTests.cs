@@ -25,17 +25,19 @@ public class WebServerTests
                 CharacterSpecialization.ProtectionWarrior,
                 CharacterRace.Human,
                 90,
-                301),
+                301,
+                "Guerrier",
+                "Protection",
+                "Humain"),
             MythicPlus = new MythicPlusState("Mists of Tirna Scithe", 11)
         };
 
-        var server = WebServer.Create(state, "http://127.0.0.1:0");
+        var server = WebServer.Create(state, host: "127.0.0.1", port: 0);
         await server.StartAsync();
 
         try
         {
-            var serverAddresses = server.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
-            var address = Assert.Single(serverAddresses!.Addresses);
+            var address = GetServerAddress(server);
 
             using var httpClient = new HttpClient();
             using var response = await httpClient.GetAsync($"{address}/api/state");
@@ -54,6 +56,9 @@ public class WebServerTests
             Assert.Equal(1, character.GetProperty("class").GetInt32());
             Assert.Equal(73, character.GetProperty("specialization").GetInt32());
             Assert.Equal(301, character.GetProperty("itemLevel").GetInt32());
+            Assert.Equal("Guerrier", character.GetProperty("className").GetString());
+            Assert.Equal("Protection", character.GetProperty("specializationName").GetString());
+            Assert.Equal("#C79C6E", character.GetProperty("classColor").GetString());
 
             var mythicPlus = root.GetProperty("mythicPlus");
             Assert.Equal("Mists of Tirna Scithe", mythicPlus.GetProperty("dungeonName").GetString());
@@ -64,5 +69,53 @@ public class WebServerTests
             await server.StopAsync();
             await server.DisposeAsync();
         }
+    }
+
+    [Fact]
+    public async Task GetOverlayReturnsConfiguredTemplateWithRuntime()
+    {
+        var templatePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-{Guid.NewGuid():N}.html");
+        await File.WriteAllTextAsync(
+            templatePath,
+            "<html><body><span data-field=\"character.name\" data-color-field=\"character.classColor\"></span></body></html>");
+
+        var overlays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["header"] = templatePath
+        };
+
+        var server = WebServer.Create(new GameState(), host: "127.0.0.1", port: 0, overlays: overlays);
+        await server.StartAsync();
+
+        try
+        {
+            var address = GetServerAddress(server);
+
+            using var httpClient = new HttpClient();
+            using var response = await httpClient.GetAsync($"{address}/overlay/header");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+
+            var html = await response.Content.ReadAsStringAsync();
+
+            Assert.Contains("data-field=\"character.name\"", html);
+            Assert.Contains("data-color-field=\"character.classColor\"", html);
+            Assert.Contains("fetch('/api/state')", html);
+            Assert.Contains("[data-color-field]", html);
+            Assert.True(html.IndexOf("<script>", StringComparison.Ordinal) < html.IndexOf("</body>", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            await server.StopAsync();
+            await server.DisposeAsync();
+            File.Delete(templatePath);
+        }
+    }
+
+    private static string GetServerAddress(Microsoft.AspNetCore.Builder.WebApplication server)
+    {
+        var serverAddresses = server.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
+        return Assert.Single(serverAddresses!.Addresses);
     }
 }
