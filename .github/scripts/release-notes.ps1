@@ -35,52 +35,50 @@ function Get-PreviousTag
     return ($tag | Select-Object -First 1).Trim()
 }
 
-$baseTag = $null
-$rangeDescription = $null
-
-if ($stage -eq "rc")
+function Get-LatestStableTag
 {
-    $ptrTags = @(& git tag --merged HEAD --sort=version:refname --list "v$productVersion-ptr.*")
-
-    if ($ptrTags.Count -gt 0)
-    {
-        $firstPtrTag = $ptrTags[0].Trim()
-        $baseTag = Get-PreviousTag "$firstPtrTag^"
-    }
-    else
-    {
-        $baseTag = Get-PreviousTag "HEAD^"
-    }
-
-    $rangeDescription = "Includes all changes from the PTR phase through this release."
-}
-elseif ([string]::IsNullOrWhiteSpace($stage))
-{
-    $stableTags = @(
+    $tags = @(
         & git tag --merged HEAD --sort=-version:refname --list "v*" |
             Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
     )
 
-    if ($stableTags.Count -gt 0)
+    if ($tags.Count -eq 0)
     {
-        $baseTag = $stableTags[0].Trim()
-        $rangeDescription = "Includes all changes since $baseTag."
+        return $null
     }
-    else
-    {
-        $rangeDescription = "Includes all changes since the beginning of the project."
-    }
+
+    return $tags[0].Trim()
+}
+
+$previousTag = Get-PreviousTag "HEAD^"
+$baseTag = $null
+$rangeDescription = $null
+$sameStageAsPreviousRelease = $false
+
+if (![string]::IsNullOrWhiteSpace($stage) -and $null -ne $previousTag -and
+    $previousTag -match '^v(?<product>\d+\.\d+\.\d+)-(?<stage>dev|alpha|ptr|rc)\.\d+$')
+{
+    $sameStageAsPreviousRelease =
+        $Matches["product"] -eq $productVersion -and
+        $Matches["stage"] -eq $stage
+}
+
+if ($sameStageAsPreviousRelease)
+{
+    $baseTag = $previousTag
+    $rangeDescription = "Includes changes since $baseTag."
 }
 else
 {
-    $baseTag = Get-PreviousTag "HEAD^"
+    $baseTag = Get-LatestStableTag
+
     $rangeDescription = if ($null -eq $baseTag)
     {
-        "Includes all changes since the beginning of the project."
+        "Includes all changes in the $productVersion release cycle since the beginning of the project."
     }
     else
     {
-        "Includes changes since $baseTag."
+        "Includes all changes in the $productVersion release cycle since $baseTag."
     }
 }
 

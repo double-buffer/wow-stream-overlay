@@ -216,14 +216,9 @@ The release workflow:
 
 `dev`, `alpha`, `ptr`, and `rc` builds are marked as GitHub pre-releases. Stable versions such as `1.0.0` are normal releases.
 
-Release notes are intentionally cumulative where that is useful:
+Release notes are stage-aware. Consecutive releases within the same prerelease stage describe only the changes since the previous release. The first release of a prerelease stage contains the full current product-version cycle since the previous stable release, or since the beginning of the project when no stable release exists. Stable releases are also cumulative since the previous stable release. This gives existing testers concise incremental notes while giving testers entering at a new maturity level a complete view of the release.
 
-- `dev`, `alpha`, and `ptr` builds describe changes since the previous tag;
-- RC builds contain all changes from the beginning of the current PTR phase through that RC;
-- stable releases contain all changes since the previous stable release;
-- commits without an associated pull request are listed separately so changes are not silently lost.
-
-For associated pull requests, both the PR title and PR description are included in the release notes.
+Commits without an associated pull request are listed separately so changes are not silently lost. For associated pull requests, both the PR title and PR description are included in the release notes.
 
 ## Development
 
