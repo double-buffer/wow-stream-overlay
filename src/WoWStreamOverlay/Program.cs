@@ -97,7 +97,7 @@ var webBuilder = WebApplication.CreateSlimBuilder(args);
 webBuilder.WebHost.UseUrls("http://127.0.0.1:37231");
 
 var webServer = webBuilder.Build();
-webServer.MapGet("/api/state", () => Results.Text(GameStateJson.Serialize(app.State), "application/json"));
+webServer.MapGet("/api/state", () => Results.Text(GameStateSerializer.Serialize(app.State), "application/json"));
 
 var combatLogReader = new CombatLogReader(logsPath);
 using var shutdown = new CancellationTokenSource();
