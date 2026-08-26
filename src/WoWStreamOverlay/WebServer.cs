@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,48 @@ public static class WebServer
         var server = builder.Build();
         server.MapGet("/api/state", () => Results.Text(GameStateSerializer.Serialize(state), "application/json"));
 
+        server.MapGet("/events", async (HttpContext context) =>
+        {
+            context.Response.ContentType = "text/event-stream";
+            context.Response.Headers.CacheControl = "no-cache";
+
+            var updates = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.DropWrite
+            });
+
+            void OnStateChanged()
+            {
+                updates.Writer.TryWrite(true);
+            }
+
+            state.Changed += OnStateChanged;
+
+            try
+            {
+                await WriteStateEventAsync(context.Response, state, context.RequestAborted);
+
+                while (await updates.Reader.WaitToReadAsync(context.RequestAborted))
+                {
+                    while (updates.Reader.TryRead(out _))
+                    {
+                    }
+
+                    await WriteStateEventAsync(context.Response, state, context.RequestAborted);
+                }
+            }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                state.Changed -= OnStateChanged;
+                updates.Writer.TryComplete();
+            }
+        });
+
         server.MapGet("/overlay/{name}", async (string name, CancellationToken cancellationToken) =>
         {
             if (overlays is null || !overlays.TryGetValue(name, out var templatePath) || !File.Exists(templatePath))
@@ -38,5 +81,11 @@ public static class WebServer
         });
 
         return server;
+    }
+
+    private static async Task WriteStateEventAsync(HttpResponse response, GameState state, CancellationToken cancellationToken)
+    {
+        await response.WriteAsync($"data: {GameStateSerializer.Serialize(state)}\n\n", cancellationToken);
+        await response.Body.FlushAsync(cancellationToken);
     }
 }
