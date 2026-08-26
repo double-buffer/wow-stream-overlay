@@ -90,7 +90,23 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-var webServer = WebServer.Create(app.State);
+var overlays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+foreach (var overlay in configuration.GetSection("Overlays").GetChildren())
+{
+    var templatePath = overlay["Template"];
+
+    if (string.IsNullOrWhiteSpace(templatePath))
+    {
+        continue;
+    }
+
+    overlays[overlay.Key] = Path.IsPathRooted(templatePath)
+        ? templatePath
+        : Path.Combine(AppContext.BaseDirectory, templatePath);
+}
+
+var webServer = WebServer.Create(app.State, overlays: overlays);
 var combatLogReader = new CombatLogReader(logsPath);
 using var shutdownTokenSource = new CancellationTokenSource();
 
