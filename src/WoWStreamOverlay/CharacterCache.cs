@@ -27,7 +27,7 @@ public sealed record CachedCharacter(
 /// <summary>
 /// Persistent cache of World of Warcraft character profiles.
 /// </summary>
-public sealed class CharacterCache
+public sealed partial class CharacterCache
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -35,6 +35,8 @@ public sealed class CharacterCache
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+
+    private static readonly CharacterCacheJsonContext JsonContext = new(JsonOptions);
 
     private readonly string _path;
     private readonly Dictionary<string, CachedCharacter> _characters = new(StringComparer.OrdinalIgnoreCase);
@@ -54,7 +56,7 @@ public sealed class CharacterCache
         }
 
         await using var stream = File.OpenRead(_path);
-        var cacheFile = await JsonSerializer.DeserializeAsync<CharacterCacheFile>(stream, JsonOptions, cancellationToken);
+        var cacheFile = await JsonSerializer.DeserializeAsync(stream, JsonContext.CharacterCacheFile, cancellationToken);
 
         if (cacheFile is null)
         {
@@ -109,7 +111,7 @@ public sealed class CharacterCache
         {
             await using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await JsonSerializer.SerializeAsync(stream, cacheFile, JsonOptions, cancellationToken);
+                await JsonSerializer.SerializeAsync(stream, cacheFile, JsonContext.CharacterCacheFile, cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
 
@@ -142,7 +144,7 @@ public sealed class CharacterCache
         public int ItemLevel { get; init; }
         public DateTimeOffset LastRefresh { get; init; }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<CharacterRefreshSource>))]
         public CharacterRefreshSource LastRefreshSource { get; init; }
 
         public CachedCharacter ToCachedCharacter()
@@ -170,5 +172,10 @@ public sealed class CharacterCache
                 LastRefreshSource = character.LastRefreshSource
             };
         }
+    }
+
+    [JsonSerializable(typeof(CharacterCacheFile))]
+    private partial class CharacterCacheJsonContext : JsonSerializerContext
+    {
     }
 }
