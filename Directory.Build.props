@@ -1,7 +1,9 @@
 <Project>
   <PropertyGroup>
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>dev.1</VersionSuffix>
+    <ReleaseStage>dev</ReleaseStage>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">local</BuildNumber>
+    <VersionSuffix Condition="'$(ReleaseStage)' != ''">$(ReleaseStage).$(BuildNumber)</VersionSuffix>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
