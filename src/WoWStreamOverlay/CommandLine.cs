@@ -24,13 +24,13 @@ public static class CommandLine
         Console.WriteLine($"{ApplicationInfo.Name} {ApplicationInfo.Version}");
         Console.WriteLine();
         Console.WriteLine("Usage:");
-        Console.WriteLine("  wow-stream-overlay                  Run the application");
-        Console.WriteLine("  wow-stream-overlay status           Show configuration and runtime status");
-        Console.WriteLine("  wow-stream-overlay addon install    Install the bundled WoW addon");
-        Console.WriteLine("  wow-stream-overlay addon update     Update the installed WoW addon");
-        Console.WriteLine("  wow-stream-overlay addon uninstall  Uninstall the WoW addon");
-        Console.WriteLine("  wow-stream-overlay --version        Show the application version");
-        Console.WriteLine("  wow-stream-overlay help             Show this help");
+        Console.WriteLine("  WowStreamOverlay                  Run the application");
+        Console.WriteLine("  WowStreamOverlay status           Show configuration and runtime status");
+        Console.WriteLine("  WowStreamOverlay addon install    Install the bundled WoW addon");
+        Console.WriteLine("  WowStreamOverlay addon update     Update the installed WoW addon");
+        Console.WriteLine("  WowStreamOverlay addon uninstall  Uninstall the WoW addon");
+        Console.WriteLine("  WowStreamOverlay --version        Show the application version");
+        Console.WriteLine("  WowStreamOverlay help             Show this help");
     }
 
     public static async Task<bool> TryExecuteAsync(string[] args, IConfiguration configuration)
@@ -282,8 +282,8 @@ public static class CommandLine
     private static void PrintAddonUsage()
     {
         Console.Error.WriteLine("Usage:");
-        Console.Error.WriteLine("  wow-stream-overlay addon install");
-        Console.Error.WriteLine("  wow-stream-overlay addon update");
-        Console.Error.WriteLine("  wow-stream-overlay addon uninstall");
+        Console.Error.WriteLine("  WowStreamOverlay addon install");
+        Console.Error.WriteLine("  WowStreamOverlay addon update");
+        Console.Error.WriteLine("  WowStreamOverlay addon uninstall");
     }
 }

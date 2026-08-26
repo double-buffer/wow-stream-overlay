@@ -148,7 +148,10 @@ $orderedPullRequests = @(
         Sort-Object @{ Expression = { [DateTime]$_.merged_at } }, @{ Expression = { [int]$_.number } }
 )
 
+$releaseUrl = "https://github.com/$Repository/releases/tag/v$Version"
 $notes = [System.Collections.Generic.List[string]]::new()
+$notes.Add("# WowStreamOverlay [**$Version**]($releaseUrl)")
+$notes.Add("")
 $notes.Add($rangeDescription)
 $notes.Add("")
 

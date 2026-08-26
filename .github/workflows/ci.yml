@@ -36,6 +36,19 @@ jobs:
       - name: Test
         run: dotnet test WoWStreamOverlay.slnx --configuration Release --no-build --verbosity normal
 
+      - name: Validate trimmed Windows publish
+        run: |
+          dotnet publish src/WoWStreamOverlay/WoWStreamOverlay.csproj \
+            --configuration Release \
+            --runtime win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            --output "${{ runner.temp }}/publish-check"
+
+          ls -lh "${{ runner.temp }}/publish-check/WowStreamOverlay.exe"
+
       - name: Validate release notes script
         shell: pwsh
         run: |

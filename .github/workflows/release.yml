@@ -63,7 +63,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $executable = Join-Path $env:RUNNER_TEMP "publish\wow-stream-overlay.exe"
+          $executable = Join-Path $env:RUNNER_TEMP "publish\WowStreamOverlay.exe"
           $version = (& $executable --version | Out-String).Trim()
 
           if ([string]::IsNullOrWhiteSpace($version))
@@ -88,7 +88,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           $publishPath = Join-Path $env:RUNNER_TEMP "publish"
-          $packagePath = Join-Path $env:RUNNER_TEMP "wow-stream-overlay-v$version-win-x64.zip"
+          $packagePath = Join-Path $env:RUNNER_TEMP "WowStreamOverlay-v$version-win-x64.zip"
 
           Compress-Archive -Path "$publishPath\*" -DestinationPath $packagePath -CompressionLevel Optimal
           "path=$packagePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -118,7 +118,7 @@ jobs:
               "--repo",
               "${{ github.repository }}",
               "--title",
-              "WoW Stream Overlay ${{ steps.version.outputs.version }}",
+              "WowStreamOverlay ${{ steps.version.outputs.version }}",
               "--notes-file",
               (Join-Path $env:RUNNER_TEMP "release-notes.md"),
               "--target",

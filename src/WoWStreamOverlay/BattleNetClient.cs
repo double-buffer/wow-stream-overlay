@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace WowStreamOverlay;
 
-public sealed class BattleNetClient
+public sealed partial class BattleNetClient
 {
     private readonly HttpClient _httpClient;
     private readonly string _clientId;
@@ -59,7 +59,7 @@ public sealed class BattleNetClient
 
         response.EnsureSuccessStatusCode();
 
-        var profile = await response.Content.ReadFromJsonAsync<BattleNetCharacterProfile>(cancellationToken);
+        var profile = await response.Content.ReadFromJsonAsync(BattleNetJsonContext.Default.BattleNetCharacterProfile, cancellationToken);
 
         if (profile is null)
         {
@@ -108,7 +108,7 @@ public sealed class BattleNetClient
 
         response.EnsureSuccessStatusCode();
 
-        var token = await response.Content.ReadFromJsonAsync<BattleNetAccessToken>(cancellationToken);
+        var token = await response.Content.ReadFromJsonAsync(BattleNetJsonContext.Default.BattleNetAccessToken, cancellationToken);
 
         if (token is null || string.IsNullOrWhiteSpace(token.AccessToken))
         {
@@ -170,5 +170,11 @@ public sealed class BattleNetClient
 
         [JsonPropertyName("slug")]
         public string Slug { get; init; } = string.Empty;
+    }
+
+    [JsonSerializable(typeof(BattleNetAccessToken))]
+    [JsonSerializable(typeof(BattleNetCharacterProfile))]
+    private partial class BattleNetJsonContext : JsonSerializerContext
+    {
     }
 }
