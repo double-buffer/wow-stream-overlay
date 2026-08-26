@@ -17,71 +17,28 @@ if ($Version -notmatch '^(?<product>\d+\.\d+\.\d+)(?:-(?<stage>dev|alpha|ptr|rc)
 }
 
 $productVersion = $Matches["product"]
-$stage = $Matches["stage"]
 
-function Get-PreviousTag
+$stableTags = @(
+    & git tag --merged HEAD --sort=-version:refname --list "v*" |
+        Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
+)
+
+$baseTag = if ($stableTags.Count -gt 0)
 {
-    param(
-        [string]$Revision
-    )
-
-    $tag = & git describe --tags --abbrev=0 $Revision 2>$null
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        return $null
-    }
-
-    return ($tag | Select-Object -First 1).Trim()
-}
-
-$baseTag = $null
-$rangeDescription = $null
-
-if ($stage -eq "rc")
-{
-    $ptrTags = @(& git tag --merged HEAD --sort=version:refname --list "v$productVersion-ptr.*")
-
-    if ($ptrTags.Count -gt 0)
-    {
-        $firstPtrTag = $ptrTags[0].Trim()
-        $baseTag = Get-PreviousTag "$firstPtrTag^"
-    }
-    else
-    {
-        $baseTag = Get-PreviousTag "HEAD^"
-    }
-
-    $rangeDescription = "Includes all changes from the PTR phase through this release."
-}
-elseif ([string]::IsNullOrWhiteSpace($stage))
-{
-    $stableTags = @(
-        & git tag --merged HEAD --sort=-version:refname --list "v*" |
-            Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
-    )
-
-    if ($stableTags.Count -gt 0)
-    {
-        $baseTag = $stableTags[0].Trim()
-        $rangeDescription = "Includes all changes since $baseTag."
-    }
-    else
-    {
-        $rangeDescription = "Includes all changes since the beginning of the project."
-    }
+    $stableTags[0].Trim()
 }
 else
 {
-    $baseTag = Get-PreviousTag "HEAD^"
-    $rangeDescription = if ($null -eq $baseTag)
-    {
-        "Includes all changes since the beginning of the project."
-    }
-    else
-    {
-        "Includes changes since $baseTag."
-    }
+    $null
+}
+
+$rangeDescription = if ($null -eq $baseTag)
+{
+    "Includes all changes in the $productVersion release cycle since the beginning of the project."
+}
+else
+{
+    "Includes all changes in the $productVersion release cycle since $baseTag."
 }
 
 $commitArguments = if ($null -eq $baseTag)
