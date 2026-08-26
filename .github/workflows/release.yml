@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and release
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore WoWStreamOverlay.slnx
+
+      - name: Build
+        run: dotnet build WoWStreamOverlay.slnx --configuration Release --no-restore -p:BuildNumber=${{ github.run_number }}
+
+      - name: Test
+        run: dotnet test WoWStreamOverlay.slnx --configuration Release --no-build --verbosity normal -p:BuildNumber=${{ github.run_number }}
+
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          $publishPath = Join-Path $env:RUNNER_TEMP "publish"
+
+          dotnet publish src/WoWStreamOverlay/WoWStreamOverlay.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -p:BuildNumber=${{ github.run_number }} `
+            --output $publishPath
+
+          if ($LASTEXITCODE -ne 0)
+          {
+              exit $LASTEXITCODE
+          }
+
+      - name: Read published version
+        id: version
+        shell: pwsh
+        run: |
+          $executable = Join-Path $env:RUNNER_TEMP "publish\wow-stream-overlay.exe"
+          $version = (& $executable --version | Out-String).Trim()
+
+          if ([string]::IsNullOrWhiteSpace($version))
+          {
+              throw "The published executable did not report a version."
+          }
+
+          if ($version.EndsWith(".local"))
+          {
+              throw "Release build unexpectedly contains a local build version: $version"
+          }
+
+          $isPrerelease = $version -match '-(dev|alpha|ptr|rc)\.\d+$'
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "prerelease=$($isPrerelease.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $publishPath = Join-Path $env:RUNNER_TEMP "publish"
+          $packagePath = Join-Path $env:RUNNER_TEMP "wow-stream-overlay-v$version-win-x64.zip"
+
+          Compress-Archive -Path "$publishPath\*" -DestinationPath $packagePath -CompressionLevel Optimal
+          "path=$packagePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Generate release notes
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notesPath = Join-Path $env:RUNNER_TEMP "release-notes.md"
+
+          & .\.github\scripts\release-notes.ps1 `
+            -Version "${{ steps.version.outputs.version }}" `
+            -Repository "${{ github.repository }}" `
+            -OutputPath $notesPath
+
+      - name: Create tag and GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $arguments = @(
+              "release",
+              "create",
+              "${{ steps.version.outputs.tag }}",
+              "${{ steps.package.outputs.path }}",
+              "--repo",
+              "${{ github.repository }}",
+              "--title",
+              "WoW Stream Overlay ${{ steps.version.outputs.version }}",
+              "--notes-file",
+              (Join-Path $env:RUNNER_TEMP "release-notes.md"),
+              "--target",
+              "${{ github.sha }}"
+          )
+
+          if ("${{ steps.version.outputs.prerelease }}" -eq "true")
+          {
+              $arguments += "--prerelease"
+          }
+
+          & gh @arguments
+
+          if ($LASTEXITCODE -ne 0)
+          {
+              exit $LASTEXITCODE
+          }
