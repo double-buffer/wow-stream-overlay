@@ -9,15 +9,17 @@ namespace WowStreamOverlay;
 /// </summary>
 public static class WebServer
 {
-    public const string DefaultUrl = "http://127.0.0.1:37231";
+    public const string DefaultHost = "127.0.0.1";
+    public const int DefaultPort = 37231;
 
     public static WebApplication Create(
         GameState state,
-        string? url = null,
+        string? host = null,
+        int? port = null,
         IReadOnlyDictionary<string, string>? overlays = null)
     {
         var builder = WebApplication.CreateSlimBuilder([]);
-        builder.WebHost.UseUrls(url ?? DefaultUrl);
+        builder.WebHost.UseUrls($"http://{host ?? DefaultHost}:{port ?? DefaultPort}");
 
         var server = builder.Build();
         server.MapGet("/api/state", () => Results.Text(GameStateSerializer.Serialize(state), "application/json"));
