@@ -17,28 +17,69 @@ if ($Version -notmatch '^(?<product>\d+\.\d+\.\d+)(?:-(?<stage>dev|alpha|ptr|rc)
 }
 
 $productVersion = $Matches["product"]
+$stage = $Matches["stage"]
 
-$stableTags = @(
-    & git tag --merged HEAD --sort=-version:refname --list "v*" |
-        Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
-)
-
-$baseTag = if ($stableTags.Count -gt 0)
+function Get-PreviousTag
 {
-    $stableTags[0].Trim()
+    param(
+        [string]$Revision
+    )
+
+    $tag = & git describe --tags --abbrev=0 $Revision 2>$null
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        return $null
+    }
+
+    return ($tag | Select-Object -First 1).Trim()
+}
+
+function Get-LatestStableTag
+{
+    $tags = @(
+        & git tag --merged HEAD --sort=-version:refname --list "v*" |
+            Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
+    )
+
+    if ($tags.Count -eq 0)
+    {
+        return $null
+    }
+
+    return $tags[0].Trim()
+}
+
+$previousTag = Get-PreviousTag "HEAD^"
+$baseTag = $null
+$rangeDescription = $null
+$sameStageAsPreviousRelease = $false
+
+if (![string]::IsNullOrWhiteSpace($stage) -and $null -ne $previousTag -and
+    $previousTag -match '^v(?<product>\d+\.\d+\.\d+)-(?<stage>dev|alpha|ptr|rc)\.\d+$')
+{
+    $sameStageAsPreviousRelease =
+        $Matches["product"] -eq $productVersion -and
+        $Matches["stage"] -eq $stage
+}
+
+if ($sameStageAsPreviousRelease)
+{
+    $baseTag = $previousTag
+    $rangeDescription = "Includes changes since $baseTag."
 }
 else
 {
-    $null
-}
+    $baseTag = Get-LatestStableTag
 
-$rangeDescription = if ($null -eq $baseTag)
-{
-    "Includes all changes in the $productVersion release cycle since the beginning of the project."
-}
-else
-{
-    "Includes all changes in the $productVersion release cycle since $baseTag."
+    $rangeDescription = if ($null -eq $baseTag)
+    {
+        "Includes all changes in the $productVersion release cycle since the beginning of the project."
+    }
+    else
+    {
+        "Includes all changes in the $productVersion release cycle since $baseTag."
+    }
 }
 
 $commitArguments = if ($null -eq $baseTag)
