@@ -75,7 +75,10 @@ public sealed class BattleNetClient
             (CharacterSpecialization)profile.ActiveSpecialization.Id,
             (CharacterRace)profile.Race.Id,
             profile.Level,
-            profile.EquippedItemLevel);
+            profile.EquippedItemLevel,
+            profile.CharacterClass.Name,
+            profile.ActiveSpecialization.Name,
+            profile.Race.Name);
     }
 
     private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
@@ -155,6 +158,9 @@ public sealed class BattleNetClient
     {
         [JsonPropertyName("id")]
         public int Id { get; init; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; init; } = string.Empty;
     }
 
     private sealed class BattleNetRealm
