@@ -11,43 +11,30 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var charactersPath = configuration["Cache:CharactersPath"];
+var charactersPath = configuration["Storage:CharactersPath"];
 
 if (string.IsNullOrWhiteSpace(charactersPath))
 {
     charactersPath = "characters.json";
 }
 
-var characterCache = new CharacterCache(charactersPath);
+var statePath = configuration["Storage:StatePath"];
 
+if (string.IsNullOrWhiteSpace(statePath))
+{
+    statePath = "state.json";
+}
+
+var characterCache = new CharacterCache(charactersPath);
 await characterCache.LoadAsync();
 
-var cachedCharacter = characterCache.Get("Player-510-001577CC");
-
-if (cachedCharacter is not null)
-{
-    Console.WriteLine(
-        $"Cached Character: {cachedCharacter.Profile.Name}, " +
-        $"Spec: {cachedCharacter.Profile.Specialization}, " +
-        $"iLvl: {cachedCharacter.Profile.ItemLevel}");
-}
+var gameStateStore = new GameStateStore(statePath);
+var gameState = await gameStateStore.LoadAsync();
 
 var clientId = configuration["BattleNet:ClientId"];
 var clientSecret = configuration["BattleNet:ClientSecret"];
 var region = configuration["BattleNet:Region"];
 var locale = configuration["BattleNet:Locale"];
-
-if (string.IsNullOrWhiteSpace(clientId))
-{
-    Console.Error.WriteLine("Error: BattleNet:ClientId is not configured.");
-    return;
-}
-
-if (string.IsNullOrWhiteSpace(clientSecret))
-{
-    Console.Error.WriteLine("Error: BattleNet:ClientSecret is not configured.");
-    return;
-}
 
 if (string.IsNullOrWhiteSpace(region))
 {
@@ -59,60 +46,38 @@ if (string.IsNullOrWhiteSpace(locale))
     locale = "fr_FR";
 }
 
-var battleNetConfigured =
-    !string.IsNullOrWhiteSpace(clientId) &&
-    !string.IsNullOrWhiteSpace(clientSecret);
+var refreshIntervalSeconds = 60;
 
-if (!battleNetConfigured)
+if (int.TryParse(configuration["BattleNet:CharacterRefreshIntervalSeconds"], out var configuredRefreshInterval) && configuredRefreshInterval > 0)
 {
-    Console.WriteLine("Battle.net integration is not configured.");
+    refreshIntervalSeconds = configuredRefreshInterval;
+}
+
+using var httpClient = new HttpClient();
+BattleNetClient? battleNetClient = null;
+
+if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+{
+    battleNetClient = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
 }
 else
 {
-    using var httpClient = new HttpClient();
-    var client = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
-
-    var character = await client.GetCharacterProfileAsync("voljin", "shaigan");
-
-    if (character is not null)
-    {
-        Console.WriteLine($"Found Character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
-
-        const string guid = "Player-510-001577CC";
-
-        characterCache.Set(
-            guid,
-            character,
-            CharacterRefreshSource.BattleNet);
-
-        await characterCache.SaveAsync();
-    }
+    Console.WriteLine("Battle.net integration is not configured.");
 }
 
-var parser = new CombatLogParser();
+var app = new WoWStreamOverlayApp(
+    new CombatLogParser(),
+    characterCache,
+    battleNetClient,
+    gameState,
+    gameStateStore,
+    TimeSpan.FromSeconds(refreshIntervalSeconds));
+
+await app.RefreshCharacterCacheAsync();
+
 using var streamReader = new StreamReader("TestLog.txt");
 
-var line = streamReader.ReadLine();
-
-while (line is not null)
+while (await streamReader.ReadLineAsync() is { } line)
 {
-    var result = parser.ParseLine(line);
-
-    if (result.Status == ParseStatus.Parsed)
-    {
-        if (result.Event is ChallengeModeStartedEvent)
-        {
-            var eventValue = result.Event as ChallengeModeStartedEvent;
-            Console.WriteLine($"MythicPlus Started: {eventValue!.DungeonName}, +{eventValue!.Level}");
-        }
-        
-        else if (result.Event is ChallengeModeEndedEvent)
-        {
-            var eventValue = result.Event as ChallengeModeEndedEvent;
-            Console.WriteLine($"MythicPlus Ended Completed: {eventValue!.Completed}");
-        }
-    }
-
-    line = streamReader.ReadLine();
+    await app.ProcessCombatLogLineAsync(line);
 }
-

@@ -9,6 +9,9 @@
 
 TestLog.txt
 characters.json
+characters.json.tmp
+state.json
+state.json.tmp
 
 # Build results
 [Dd]ebug/

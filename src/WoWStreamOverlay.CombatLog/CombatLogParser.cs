@@ -118,21 +118,28 @@ public class CombatLogParser
 
         if (IsLocalPlayer(logData[ranges[3]]))
         {
-            var guid = logData[ranges[1]].ToString();
-            var name = logData[ranges[2]].Trim('"').ToString();
-
-            return new(ParseStatus.Parsed, new PlayerObservedEvent(guid, name));
+            return ParsePlayer(logData[ranges[1]], logData[ranges[2]]);
         }
 
         if (IsLocalPlayer(logData[ranges[7]]))
         {
-            var guid = logData[ranges[5]].ToString();
-            var name = logData[ranges[6]].Trim('"').ToString();
-
-            return new(ParseStatus.Parsed, new PlayerObservedEvent(guid, name));
+            return ParsePlayer(logData[ranges[5]], logData[ranges[6]]);
         }
 
-        return new(ParseStatus.Ignored, null);
+        return new ParseResult(ParseStatus.Ignored, null);
+    }
+
+    private static ParseResult ParsePlayer(ReadOnlySpan<char> guidValue, ReadOnlySpan<char> nameValue)
+    {
+        if (guidValue.SequenceEqual("nil") || nameValue.SequenceEqual("nil"))
+        {
+            return new ParseResult(ParseStatus.Ignored, null);
+        }
+
+        var guid = guidValue.ToString();
+        var name = nameValue.Trim('"').ToString();
+
+        return new ParseResult(ParseStatus.Parsed, new PlayerObservedEvent(guid, name));
     }
 
     private static bool IsLocalPlayer(ReadOnlySpan<char> value)
