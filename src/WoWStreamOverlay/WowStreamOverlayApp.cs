@@ -88,6 +88,11 @@ public sealed class WoWStreamOverlayApp
         }
     }
 
+    public Task BootstrapPlayerAsync(PlayerObservedEvent playerObserved, CancellationToken cancellationToken = default)
+    {
+        return ProcessPlayerObservedAsync(playerObserved, cancellationToken);
+    }
+
     public async Task ProcessCombatLogLineAsync(string line, CancellationToken cancellationToken = default)
     {
         var result = _parser.ParseLine(line);

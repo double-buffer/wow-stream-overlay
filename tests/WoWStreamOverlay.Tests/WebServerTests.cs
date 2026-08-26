@@ -127,6 +127,43 @@ public class WebServerTests
     }
 
     [Fact]
+    public async Task EventsEndsWhenApplicationStops()
+    {
+        using var applicationStopping = new CancellationTokenSource();
+        var server = WebServer.Create(
+            new GameState(),
+            host: "127.0.0.1",
+            port: 0,
+            applicationStopping: applicationStopping.Token);
+        await server.StartAsync();
+
+        try
+        {
+            var address = GetServerAddress(server);
+
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{address}/events");
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            await ReadSseDataAsync(reader);
+            applicationStopping.Cancel();
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+            while (await reader.ReadLineAsync(timeout.Token) is not null)
+            {
+            }
+        }
+        finally
+        {
+            await server.StopAsync();
+            await server.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task GetOverlayReturnsConfiguredTemplateWithRuntime()
     {
         var templatePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-{Guid.NewGuid():N}.html");

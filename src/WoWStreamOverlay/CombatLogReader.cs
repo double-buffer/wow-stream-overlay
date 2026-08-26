@@ -1,4 +1,5 @@
 using System.Text;
+using WowStreamOverlay.CombatLog;
 
 namespace WowStreamOverlay;
 
@@ -15,6 +16,38 @@ public sealed class CombatLogReader
     public CombatLogReader(string logsPath)
     {
         _logsPath = logsPath;
+    }
+
+    public async Task<PlayerObservedEvent?> FindLastPlayerObservedAsync(CancellationToken cancellationToken = default)
+    {
+        var path = FindLatestLogFile();
+
+        if (path is null)
+        {
+            return null;
+        }
+
+        using var reader = TryOpenReader(path, seekToEnd: false);
+
+        if (reader is null)
+        {
+            return null;
+        }
+
+        var parser = new CombatLogParser();
+        PlayerObservedEvent? lastPlayerObserved = null;
+
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        {
+            var result = parser.ParseLine(line);
+
+            if (result.Status == ParseStatus.Parsed && result.Event is PlayerObservedEvent playerObserved)
+            {
+                lastPlayerObserved = playerObserved;
+            }
+        }
+
+        return lastPlayerObserved;
     }
 
     public async Task ProcessLogFilesAsync(

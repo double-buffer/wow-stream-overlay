@@ -73,6 +73,8 @@ http://127.0.0.1:37231/overlay/header
 
 The bundled addon is deliberately tiny. It helps initialize combat logging when entering the game so the desktop application can discover the current character through the combat log.
 
+On first run, when no persisted character is available yet, the application scans the latest combat log for the most recently observed local player before switching to normal live following at the end of the file. Historical Mythic+ state is not replayed during this bootstrap.
+
 The addon is versioned independently from the desktop application. Its version is stored directly in:
 
 ```text
@@ -154,7 +156,7 @@ WowStreamOverlay                  Run the application
 WowStreamOverlay status           Show configuration and runtime status
 WowStreamOverlay addon install    Install the bundled WoW addon
 WowStreamOverlay addon update     Update the installed WoW addon
-WowStreamOverlay addon uninstall  Uninstall the WoW addon
+WowStreamOverlay addon uninstall  Uninstall the bundled WoW addon
 WowStreamOverlay --version        Show the exact application build version
 WowStreamOverlay help             Show command help
 ```
@@ -180,16 +182,16 @@ Application versions follow this project lifecycle:
 
 `ptr` is simply this project's WoW-flavored name for the public test stage. It is not related to Blizzard's PTR or to the World of Warcraft game version.
 
-The product version and release stage are defined in `Directory.Build.props`. Local builds use `local` as their build identifier:
+The product version and release stage are defined in `Directory.Build.props`. Local builds use `local` as their build identifier. The current 1.0 line is in alpha:
 
 ```text
-1.0.0-dev.local
+1.0.0-alpha.local
 ```
 
 Official builds receive a global build number from the release workflow:
 
 ```text
-1.0.0-dev.17
+1.0.0-alpha.3
 ```
 
 Stable releases have no stage suffix:

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
@@ -107,6 +107,19 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
+var combatLogReader = new CombatLogReader(logsPath);
+
+if (gameState.Character is null)
+{
+    var lastPlayerObserved = await combatLogReader.FindLastPlayerObservedAsync();
+
+    if (lastPlayerObserved is not null)
+    {
+        Console.WriteLine($"Bootstrapping character from combat log: {lastPlayerObserved.Name}");
+        await app.BootstrapPlayerAsync(lastPlayerObserved);
+    }
+}
+
 var overlays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 foreach (var overlay in configuration.GetSection("Overlays").GetChildren())
@@ -142,8 +155,6 @@ if (!string.IsNullOrWhiteSpace(configuredWebPort))
     }
 }
 
-var webServer = WebServer.Create(app.State, host: webHost, port: webPort, overlays: overlays);
-var combatLogReader = new CombatLogReader(logsPath);
 using var shutdownTokenSource = new CancellationTokenSource();
 
 Console.CancelKeyPress += (_, eventArgs) =>
@@ -151,6 +162,13 @@ Console.CancelKeyPress += (_, eventArgs) =>
     eventArgs.Cancel = true;
     shutdownTokenSource.Cancel();
 };
+
+var webServer = WebServer.Create(
+    app.State,
+    host: webHost,
+    port: webPort,
+    overlays: overlays,
+    applicationStopping: shutdownTokenSource.Token);
 
 await webServer.StartAsync(shutdownTokenSource.Token);
 

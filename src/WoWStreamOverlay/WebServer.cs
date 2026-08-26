@@ -17,7 +17,8 @@ public static class WebServer
         GameState state,
         string? host = null,
         int? port = null,
-        IReadOnlyDictionary<string, string>? overlays = null)
+        IReadOnlyDictionary<string, string>? overlays = null,
+        CancellationToken applicationStopping = default)
     {
         var builder = WebApplication.CreateSlimBuilder([]);
         builder.WebHost.UseUrls($"http://{host ?? DefaultHost}:{port ?? DefaultPort}");
@@ -44,20 +45,25 @@ public static class WebServer
 
             state.Changed += OnStateChanged;
 
+            using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                context.RequestAborted,
+                applicationStopping);
+            var cancellationToken = cancellationTokenSource.Token;
+
             try
             {
-                await WriteStateEventAsync(context.Response, state, context.RequestAborted);
+                await WriteStateEventAsync(context.Response, state, cancellationToken);
 
-                while (await updates.Reader.WaitToReadAsync(context.RequestAborted))
+                while (await updates.Reader.WaitToReadAsync(cancellationToken))
                 {
                     while (updates.Reader.TryRead(out _))
                     {
                     }
 
-                    await WriteStateEventAsync(context.Response, state, context.RequestAborted);
+                    await WriteStateEventAsync(context.Response, state, cancellationToken);
                 }
             }
-            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
             }
             finally
