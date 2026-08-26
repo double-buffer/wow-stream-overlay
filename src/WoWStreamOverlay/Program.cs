@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
 
@@ -89,5 +90,29 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
+var webServer = WebServer.Create(app.State);
 var combatLogReader = new CombatLogReader(logsPath);
-await combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync);
+using var shutdownTokenSource = new CancellationTokenSource();
+
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    shutdownTokenSource.Cancel();
+};
+
+await webServer.StartAsync(shutdownTokenSource.Token);
+
+var logTask = combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync, shutdownTokenSource.Token);
+var serverTask = webServer.WaitForShutdownAsync(shutdownTokenSource.Token);
+
+try
+{
+    await Task.WhenAny(logTask, serverTask);
+
+    shutdownTokenSource.Cancel();
+
+    await Task.WhenAll(logTask, serverTask);
+}
+catch (OperationCanceledException) when (shutdownTokenSource.IsCancellationRequested)
+{
+}
