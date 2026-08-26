@@ -9,6 +9,16 @@ public static class CommandLine
         return args.Length == 1 && args[0] is "help" or "--help" or "-h";
     }
 
+    public static bool IsVersionRequest(string[] args)
+    {
+        return args.Length == 1 && args[0] is "version" or "--version";
+    }
+
+    public static void PrintVersion()
+    {
+        Console.WriteLine(ApplicationInfo.Version);
+    }
+
     public static void PrintHelp()
     {
         Console.WriteLine($"{ApplicationInfo.Name} {ApplicationInfo.Version}");
@@ -19,6 +29,7 @@ public static class CommandLine
         Console.WriteLine("  wow-stream-overlay addon install    Install the bundled WoW addon");
         Console.WriteLine("  wow-stream-overlay addon update     Update the installed WoW addon");
         Console.WriteLine("  wow-stream-overlay addon uninstall  Uninstall the WoW addon");
+        Console.WriteLine("  wow-stream-overlay --version        Show the application version");
         Console.WriteLine("  wow-stream-overlay help             Show this help");
     }
 

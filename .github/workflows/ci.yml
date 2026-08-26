@@ -35,3 +35,20 @@ jobs:
 
       - name: Test
         run: dotnet test WoWStreamOverlay.slnx --configuration Release --no-build --verbosity normal
+
+      - name: Validate release notes script
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+
+          [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path ".github/scripts/release-notes.ps1"),
+              [ref]$tokens,
+              [ref]$errors) | Out-Null
+
+          if ($errors.Count -gt 0)
+          {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+          }
