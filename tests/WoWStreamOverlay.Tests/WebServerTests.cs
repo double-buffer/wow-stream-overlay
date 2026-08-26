@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using WowStreamOverlay.CombatLog;
 using Xunit;
 
 namespace WowStreamOverlay.Tests;
@@ -72,6 +73,60 @@ public class WebServerTests
     }
 
     [Fact]
+    public async Task EventsReturnsInitialStateAndSubsequentChanges()
+    {
+        var statePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-state-{Guid.NewGuid():N}.json");
+        var characterCachePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-characters-{Guid.NewGuid():N}.json");
+        var state = new GameState();
+        var app = new WoWStreamOverlayApp(
+            new CombatLogParser(),
+            new CharacterCache(characterCachePath),
+            null,
+            state,
+            new GameStateStore(statePath),
+            TimeSpan.FromMinutes(1));
+
+        var server = WebServer.Create(state, host: "127.0.0.1", port: 0);
+        await server.StartAsync();
+
+        try
+        {
+            var address = GetServerAddress(server);
+
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{address}/events");
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/event-stream", response.Content.Headers.ContentType?.MediaType);
+
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            using (var initialJson = JsonDocument.Parse(await ReadSseDataAsync(reader)))
+            {
+                Assert.Equal(JsonValueKind.Null, initialJson.RootElement.GetProperty("mythicPlus").ValueKind);
+            }
+
+            await app.ProcessCombatLogLineAsync(
+                "8/25/2026 09:00:00.0000  CHALLENGE_MODE_START,\"Antre de Nalorakk\",2825,999,9,[1,2,3,4]");
+
+            using var updatedJson = JsonDocument.Parse(await ReadSseDataAsync(reader));
+            var mythicPlus = updatedJson.RootElement.GetProperty("mythicPlus");
+
+            Assert.Equal("Antre de Nalorakk", mythicPlus.GetProperty("dungeonName").GetString());
+            Assert.Equal(9, mythicPlus.GetProperty("level").GetInt32());
+        }
+        finally
+        {
+            await server.StopAsync();
+            await server.DisposeAsync();
+            File.Delete(statePath);
+            File.Delete(characterCachePath);
+        }
+    }
+
+    [Fact]
     public async Task GetOverlayReturnsConfiguredTemplateWithRuntime()
     {
         var templatePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-{Guid.NewGuid():N}.html");
@@ -101,7 +156,8 @@ public class WebServerTests
 
             Assert.Contains("data-field=\"character.name\"", html);
             Assert.Contains("data-color-field=\"character.classColor\"", html);
-            Assert.Contains("fetch('/api/state')", html);
+            Assert.Contains("new EventSource('/events')", html);
+            Assert.DoesNotContain("fetch('/api/state')", html);
             Assert.Contains("[data-color-field]", html);
             Assert.True(html.IndexOf("<script>", StringComparison.Ordinal) < html.IndexOf("</body>", StringComparison.OrdinalIgnoreCase));
         }
@@ -110,6 +166,26 @@ public class WebServerTests
             await server.StopAsync();
             await server.DisposeAsync();
             File.Delete(templatePath);
+        }
+    }
+
+    private static async Task<string> ReadSseDataAsync(StreamReader reader)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+        while (true)
+        {
+            var line = await reader.ReadLineAsync(timeout.Token);
+
+            if (line is null)
+            {
+                throw new InvalidOperationException("The SSE connection ended before an event was received.");
+            }
+
+            if (line.StartsWith("data: ", StringComparison.Ordinal))
+            {
+                return line[6..];
+            }
         }
     }
 
