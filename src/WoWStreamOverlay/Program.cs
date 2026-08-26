@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
 
@@ -107,8 +108,10 @@ Console.CancelKeyPress += (_, eventArgs) =>
     shutdown.Cancel();
 };
 
+await webServer.StartAsync(shutdown.Token);
+
 var logTask = combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync, shutdown.Token);
-var serverTask = webServer.RunAsync(shutdown.Token);
+var serverTask = webServer.WaitForShutdownAsync(shutdown.Token);
 
 try
 {
