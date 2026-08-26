@@ -3,7 +3,8 @@ namespace WowStreamOverlay;
 public enum ReleaseStage
 {
     Dev,
-    Beta,
+    Alpha,
+    Ptr,
     Rc,
     Release
 }
@@ -13,7 +14,7 @@ public readonly record struct ReleaseVersion(
     int Minor,
     int Patch,
     ReleaseStage Stage = ReleaseStage.Release,
-    int StageNumber = 0) : IComparable<ReleaseVersion>
+    int BuildNumber = 0) : IComparable<ReleaseVersion>
 {
     public int CompareTo(ReleaseVersion other)
     {
@@ -45,7 +46,7 @@ public readonly record struct ReleaseVersion(
             return comparison;
         }
 
-        return StageNumber.CompareTo(other.StageNumber);
+        return BuildNumber.CompareTo(other.BuildNumber);
     }
 
     public override string ToString()
@@ -60,12 +61,14 @@ public readonly record struct ReleaseVersion(
         var stage = Stage switch
         {
             ReleaseStage.Dev => "dev",
-            ReleaseStage.Beta => "beta",
+            ReleaseStage.Alpha => "alpha",
+            ReleaseStage.Ptr => "ptr",
             ReleaseStage.Rc => "rc",
             _ => throw new InvalidOperationException($"Unsupported release stage: {Stage}")
         };
 
-        return $"{version}-{stage}.{StageNumber}";
+        var build = BuildNumber == 0 ? "local" : BuildNumber.ToString();
+        return $"{version}-{stage}.{build}";
     }
 
     public static bool TryParse(string? value, out ReleaseVersion version)
@@ -98,7 +101,7 @@ public readonly record struct ReleaseVersion(
         var suffix = value[(separator + 1)..];
         var suffixParts = suffix.Split('.');
 
-        if (suffixParts.Length != 2 || !int.TryParse(suffixParts[1], out var stageNumber) || stageNumber < 1)
+        if (suffixParts.Length != 2)
         {
             return false;
         }
@@ -106,7 +109,8 @@ public readonly record struct ReleaseVersion(
         var stage = suffixParts[0].ToLowerInvariant() switch
         {
             "dev" => ReleaseStage.Dev,
-            "beta" => ReleaseStage.Beta,
+            "alpha" => ReleaseStage.Alpha,
+            "ptr" => ReleaseStage.Ptr,
             "rc" => ReleaseStage.Rc,
             _ => (ReleaseStage?)null
         };
@@ -116,7 +120,18 @@ public readonly record struct ReleaseVersion(
             return false;
         }
 
-        version = new ReleaseVersion(major, minor, patch, stage.Value, stageNumber);
+        int buildNumber;
+
+        if (string.Equals(suffixParts[1], "local", StringComparison.OrdinalIgnoreCase))
+        {
+            buildNumber = 0;
+        }
+        else if (!int.TryParse(suffixParts[1], out buildNumber) || buildNumber < 1)
+        {
+            return false;
+        }
+
+        version = new ReleaseVersion(major, minor, patch, stage.Value, buildNumber);
         return true;
     }
 
