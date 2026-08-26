@@ -84,6 +84,7 @@ public sealed class WoWStreamOverlayApp
         if (stateChanged)
         {
             await _gameStateStore.SaveAsync(_gameState, cancellationToken);
+            _gameState.NotifyChanged();
         }
     }
 
@@ -105,12 +106,14 @@ public sealed class WoWStreamOverlayApp
             case ChallengeModeStartedEvent challengeStarted:
                 _gameState.MythicPlus = new MythicPlusState(challengeStarted.DungeonName, challengeStarted.Level);
                 await _gameStateStore.SaveAsync(_gameState, cancellationToken);
+                _gameState.NotifyChanged();
                 Console.WriteLine($"MythicPlus Started: {challengeStarted.DungeonName}, +{challengeStarted.Level}");
                 break;
 
             case ChallengeModeEndedEvent challengeEnded:
                 _gameState.MythicPlus = null;
                 await _gameStateStore.SaveAsync(_gameState, cancellationToken);
+                _gameState.NotifyChanged();
                 Console.WriteLine($"MythicPlus Ended Completed: {challengeEnded.Completed}");
                 break;
         }
@@ -137,6 +140,7 @@ public sealed class WoWStreamOverlayApp
             _nextCharacterRefresh = cachedCharacter?.LastRefresh + _characterRefreshInterval ?? now;
 
             await _gameStateStore.SaveAsync(_gameState, cancellationToken);
+            _gameState.NotifyChanged();
 
             if (cachedCharacter is not null)
             {
@@ -200,6 +204,7 @@ public sealed class WoWStreamOverlayApp
 
             await _characterCache.SaveAsync(cancellationToken);
             await _gameStateStore.SaveAsync(_gameState, cancellationToken);
+            _gameState.NotifyChanged();
 
             Console.WriteLine($"Refreshed current character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
         }
