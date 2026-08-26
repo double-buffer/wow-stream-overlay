@@ -16,7 +16,7 @@ public sealed class AddonManager
     public string InstalledPath { get; }
 
     public bool IsInstalled => Directory.Exists(InstalledPath);
-    public ReleaseVersion? BundledVersion => ReadVersion(Path.Combine(BundledPath, TocFileName));
+    public ReleaseVersion? BundledVersion => ReleaseVersion.TryParse(ApplicationInfo.Version, out var version) ? version : null;
     public ReleaseVersion? InstalledVersion => ReadVersion(Path.Combine(InstalledPath, TocFileName));
 
     public AddonManager(string bundledPath, string installedPath)
@@ -63,7 +63,10 @@ public sealed class AddonManager
             throw new InvalidOperationException("The addon is already installed. Use 'addon update' to replace it.");
         }
 
+        var bundledVersion = BundledVersion ?? throw new InvalidOperationException("The application has no valid release version.");
+
         CopyDirectory(BundledPath, InstalledPath);
+        WriteVersion(Path.Combine(InstalledPath, TocFileName), bundledVersion);
     }
 
     public AddonUpdateResult Update()
@@ -75,7 +78,7 @@ public sealed class AddonManager
             throw new InvalidOperationException("The addon is not installed. Use 'addon install' first.");
         }
 
-        var bundledVersion = BundledVersion ?? throw new InvalidOperationException("The bundled addon has no valid version in its .toc file.");
+        var bundledVersion = BundledVersion ?? throw new InvalidOperationException("The application has no valid release version.");
         var installedVersion = InstalledVersion;
 
         if (installedVersion is not null)
@@ -95,6 +98,7 @@ public sealed class AddonManager
 
         Directory.Delete(InstalledPath, recursive: true);
         CopyDirectory(BundledPath, InstalledPath);
+        WriteVersion(Path.Combine(InstalledPath, TocFileName), bundledVersion);
 
         return AddonUpdateResult.Updated;
     }
@@ -139,6 +143,25 @@ public sealed class AddonManager
         {
             throw new InvalidOperationException($"Bundled addon not found: {BundledPath}");
         }
+    }
+
+    private static void WriteVersion(string tocPath, ReleaseVersion version)
+    {
+        var lines = File.ReadAllLines(tocPath);
+
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (!lines[index].StartsWith("## Version:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            lines[index] = $"## Version: {version}";
+            File.WriteAllLines(tocPath, lines);
+            return;
+        }
+
+        throw new InvalidOperationException($"Addon version header not found: {tocPath}");
     }
 
     private static void CopyDirectory(string sourcePath, string destinationPath)
