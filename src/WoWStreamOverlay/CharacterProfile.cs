@@ -12,6 +12,9 @@ namespace WowStreamOverlay;
 /// <param name="Race">Character race.</param>
 /// <param name="Level">Character level.</param>
 /// <param name="ItemLevel">Equipped item level.</param>
+/// <param name="ClassName">Localized character class name.</param>
+/// <param name="SpecializationName">Localized active specialization name.</param>
+/// <param name="RaceName">Localized character race name.</param>
 public sealed record CharacterProfile(
     string Name,
     string Realm,
@@ -21,7 +24,10 @@ public sealed record CharacterProfile(
     CharacterSpecialization Specialization,
     CharacterRace Race,
     int Level,
-    int ItemLevel);
+    int ItemLevel,
+    string? ClassName = null,
+    string? SpecializationName = null,
+    string? RaceName = null);
 
 /// <summary>
 /// World of Warcraft playable character classes.
