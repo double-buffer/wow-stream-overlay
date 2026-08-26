@@ -40,7 +40,7 @@ $rangeDescription = $null
 
 if ($stage -eq "rc")
 {
-    $ptrTags = @(& git tag --sort=version:refname --list "v$productVersion-ptr.*")
+    $ptrTags = @(& git tag --merged HEAD --sort=version:refname --list "v$productVersion-ptr.*")
 
     if ($ptrTags.Count -gt 0)
     {
