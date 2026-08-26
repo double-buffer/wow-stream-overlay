@@ -226,8 +226,8 @@ The project targets .NET 10.
 
 ```text
 dotnet restore WoWStreamOverlay.slnx
-dotnet build WoWStreamOverlay.slnx --configuration Release --no-restore
-dotnet test WoWStreamOverlay.slnx --configuration Release --no-build --verbosity normal
+dotnet build WoWStreamOverlay.slnx
+dotnet test WoWStreamOverlay.slnx
 ```
 
 Run from source with:
