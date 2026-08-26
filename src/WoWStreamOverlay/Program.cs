@@ -11,14 +11,14 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var charactersPath = configuration["Cache:CharactersPath"];
+var charactersPath = configuration["Storage:CharactersPath"];
 
 if (string.IsNullOrWhiteSpace(charactersPath))
 {
     charactersPath = "characters.json";
 }
 
-var statePath = configuration["State:Path"];
+var statePath = configuration["Storage:StatePath"];
 
 if (string.IsNullOrWhiteSpace(statePath))
 {
