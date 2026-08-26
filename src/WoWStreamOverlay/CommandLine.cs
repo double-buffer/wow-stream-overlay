@@ -151,11 +151,11 @@ public static class CommandLine
         {
             WriteStatus("Update", "Unknown");
         }
-        else if (bundledVersion.Value > installedVersion.Value)
+        else if (bundledVersion > installedVersion)
         {
             WriteStatus("Update", "Available");
         }
-        else if (bundledVersion.Value == installedVersion.Value)
+        else if (bundledVersion == installedVersion)
         {
             WriteStatus("Update", "Up to date");
         }
