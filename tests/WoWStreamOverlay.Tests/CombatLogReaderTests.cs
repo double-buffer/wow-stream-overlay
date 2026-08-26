@@ -40,4 +40,22 @@ public class CombatLogReaderTests
             Directory.Delete(logsPath, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task FindLastPlayerObservedReturnsNullWithoutLogs()
+    {
+        var logsPath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-logs-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(logsPath);
+
+        try
+        {
+            var reader = new CombatLogReader(logsPath);
+
+            Assert.Null(await reader.FindLastPlayerObservedAsync());
+        }
+        finally
+        {
+            Directory.Delete(logsPath, recursive: true);
+        }
+    }
 }
