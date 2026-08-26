@@ -20,7 +20,7 @@ public sealed class GameStateStore
         }
 
         await using var stream = File.OpenRead(_path);
-        var state = await GameStateJson.DeserializeAsync(stream, cancellationToken) ?? new GameState();
+        var state = await GameStateSerializer.DeserializeAsync(stream, cancellationToken) ?? new GameState();
 
         state.MythicPlus = null;
         return state;
@@ -41,7 +41,7 @@ public sealed class GameStateStore
         {
             await using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await GameStateJson.SerializeAsync(stream, state, indented: true, cancellationToken: cancellationToken);
+                await GameStateSerializer.SerializeAsync(stream, state, indented: true, cancellationToken: cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
 
