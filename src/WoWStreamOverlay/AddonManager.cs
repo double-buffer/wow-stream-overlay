@@ -16,8 +16,8 @@ public sealed class AddonManager
     public string InstalledPath { get; }
 
     public bool IsInstalled => Directory.Exists(InstalledPath);
-    public Version? BundledVersion => ReadVersion(Path.Combine(BundledPath, TocFileName));
-    public Version? InstalledVersion => ReadVersion(Path.Combine(InstalledPath, TocFileName));
+    public ReleaseVersion? BundledVersion => ReadVersion(Path.Combine(BundledPath, TocFileName));
+    public ReleaseVersion? InstalledVersion => ReadVersion(Path.Combine(InstalledPath, TocFileName));
 
     public AddonManager(string bundledPath, string installedPath)
     {
@@ -80,7 +80,7 @@ public sealed class AddonManager
 
         if (installedVersion is not null)
         {
-            var comparison = bundledVersion.CompareTo(installedVersion);
+            var comparison = bundledVersion.CompareTo(installedVersion.Value);
 
             if (comparison == 0)
             {
@@ -110,7 +110,7 @@ public sealed class AddonManager
         return true;
     }
 
-    public static Version? ReadVersion(string tocPath)
+    public static ReleaseVersion? ReadVersion(string tocPath)
     {
         if (!File.Exists(tocPath))
         {
@@ -127,7 +127,7 @@ public sealed class AddonManager
             }
 
             var value = line[prefix.Length..].Trim();
-            return Version.TryParse(value, out var version) ? version : null;
+            return ReleaseVersion.TryParse(value, out var version) ? version : null;
         }
 
         return null;
