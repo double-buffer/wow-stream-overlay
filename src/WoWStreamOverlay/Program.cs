@@ -11,6 +11,20 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
+var logsPath = configuration["Wow:LogsPath"];
+
+if (string.IsNullOrWhiteSpace(logsPath))
+{
+    Console.Error.WriteLine("Error: Wow:LogsPath is not configured.");
+    return;
+}
+
+if (!Directory.Exists(logsPath))
+{
+    Console.Error.WriteLine($"Error: World of Warcraft logs folder does not exist: {logsPath}");
+    return;
+}
+
 var charactersPath = configuration["Storage:CharactersPath"];
 
 if (string.IsNullOrWhiteSpace(charactersPath))
@@ -75,9 +89,5 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-using var streamReader = new StreamReader("TestLog.txt");
-
-while (await streamReader.ReadLineAsync() is { } line)
-{
-    await app.ProcessCombatLogLineAsync(line);
-}
+var combatLogReader = new CombatLogReader(logsPath);
+await combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync);
