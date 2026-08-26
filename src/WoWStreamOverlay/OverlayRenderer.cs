@@ -27,16 +27,8 @@ public static class OverlayRenderer
         });
     };
 
-    fetch('/api/state')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Unable to load game state: ${response.status}`);
-            }
-
-            return response.json();
-        })
-        .then(applyState)
-        .catch(error => console.error(error));
+    const events = new EventSource('/events');
+    events.onmessage = event => applyState(JSON.parse(event.data));
 })();
 </script>
 """;
