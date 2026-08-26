@@ -26,5 +26,9 @@
         <None Update="Overlays\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\Addon\WoWStreamOverlay\**\*">
+            <Link>Addon\WoWStreamOverlay\%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
