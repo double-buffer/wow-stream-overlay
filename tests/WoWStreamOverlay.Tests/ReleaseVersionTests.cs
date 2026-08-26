@@ -5,18 +5,20 @@ namespace WowStreamOverlay.Tests;
 public class ReleaseVersionTests
 {
     [Theory]
+    [InlineData("1.0.0-dev.local", 1, 0, 0, ReleaseStage.Dev, 0)]
     [InlineData("1.0.0-dev.1", 1, 0, 0, ReleaseStage.Dev, 1)]
-    [InlineData("1.0.0-beta.2", 1, 0, 0, ReleaseStage.Beta, 2)]
-    [InlineData("1.0.0-rc.3", 1, 0, 0, ReleaseStage.Rc, 3)]
+    [InlineData("1.0.0-alpha.3", 1, 0, 0, ReleaseStage.Alpha, 3)]
+    [InlineData("1.0.0-ptr.4", 1, 0, 0, ReleaseStage.Ptr, 4)]
+    [InlineData("1.0.0-rc.5", 1, 0, 0, ReleaseStage.Rc, 5)]
     [InlineData("1.0.0", 1, 0, 0, ReleaseStage.Release, 0)]
-    public void ParseReleaseVersion(string value, int major, int minor, int patch, ReleaseStage stage, int stageNumber)
+    public void ParseReleaseVersion(string value, int major, int minor, int patch, ReleaseStage stage, int buildNumber)
     {
         Assert.True(ReleaseVersion.TryParse(value, out var version));
         Assert.Equal(major, version.Major);
         Assert.Equal(minor, version.Minor);
         Assert.Equal(patch, version.Patch);
         Assert.Equal(stage, version.Stage);
-        Assert.Equal(stageNumber, version.StageNumber);
+        Assert.Equal(buildNumber, version.BuildNumber);
         Assert.Equal(value, version.ToString());
     }
 
@@ -24,7 +26,7 @@ public class ReleaseVersionTests
     [InlineData("1.0")]
     [InlineData("1.0.0-dev")]
     [InlineData("1.0.0-dev.0")]
-    [InlineData("1.0.0-alpha.1")]
+    [InlineData("1.0.0-beta.1")]
     [InlineData("nope")]
     public void RejectInvalidReleaseVersion(string value)
     {
@@ -34,11 +36,12 @@ public class ReleaseVersionTests
     [Fact]
     public void PrereleaseStagesUseProductReleaseOrder()
     {
-        Assert.True(Parse("1.0.0-dev.1") < Parse("1.0.0-dev.2"));
-        Assert.True(Parse("1.0.0-dev.2") < Parse("1.0.0-beta.1"));
-        Assert.True(Parse("1.0.0-beta.1") < Parse("1.0.0-rc.1"));
-        Assert.True(Parse("1.0.0-rc.1") < Parse("1.0.0"));
-        Assert.True(Parse("1.0.0") < Parse("1.1.0-dev.1"));
+        Assert.True(Parse("1.0.0-dev.local") < Parse("1.0.0-dev.1"));
+        Assert.True(Parse("1.0.0-dev.2") < Parse("1.0.0-alpha.3"));
+        Assert.True(Parse("1.0.0-alpha.3") < Parse("1.0.0-ptr.4"));
+        Assert.True(Parse("1.0.0-ptr.4") < Parse("1.0.0-rc.5"));
+        Assert.True(Parse("1.0.0-rc.5") < Parse("1.0.0"));
+        Assert.True(Parse("1.0.0") < Parse("1.1.0-dev.6"));
     }
 
     [Fact]
@@ -48,11 +51,11 @@ public class ReleaseVersionTests
 
         try
         {
-            await File.WriteAllTextAsync(path, "## Interface: 120100\n## Version: 1.0.0-dev.1\n");
+            await File.WriteAllTextAsync(path, "## Interface: 120100\n## Version: 1.0.0-ptr.4\n");
 
             var version = AddonManager.ReadVersion(path);
 
-            Assert.Equal(Parse("1.0.0-dev.1"), version);
+            Assert.Equal(Parse("1.0.0-ptr.4"), version);
         }
         finally
         {
