@@ -16,6 +16,11 @@ public static class OverlayRenderer
             element.textContent = value == null ? '' : value;
         });
 
+        document.querySelectorAll('[data-color-field]').forEach(element => {
+            const value = getValue(state, element.dataset.colorField);
+            element.style.color = value == null ? '' : value;
+        });
+
         document.querySelectorAll('[data-visible-field]').forEach(element => {
             const value = getValue(state, element.dataset.visibleField);
             element.hidden = value == null;
