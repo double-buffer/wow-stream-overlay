@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
 
@@ -89,5 +92,37 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
+var webBuilder = WebApplication.CreateSlimBuilder();
+webBuilder.WebHost.UseUrls("http://127.0.0.1:37231");
+
+var webServer = webBuilder.Build();
+webServer.MapGet("/api/state", () => Results.Text(GameStateJson.Serialize(app.State), "application/json"));
+
 var combatLogReader = new CombatLogReader(logsPath);
-await combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync);
+using var shutdown = new CancellationTokenSource();
+
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    shutdown.Cancel();
+};
+
+var logTask = combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync, shutdown.Token);
+var serverTask = webServer.RunAsync(shutdown.Token);
+
+try
+{
+    await Task.WhenAny(logTask, serverTask);
+}
+finally
+{
+    await shutdown.CancelAsync();
+}
+
+try
+{
+    await Task.WhenAll(logTask, serverTask);
+}
+catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
+{
+}
