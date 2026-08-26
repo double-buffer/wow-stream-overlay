@@ -89,9 +89,9 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-var combatLogTailer = new CombatLogTailer(logsPath);
+var combatLogReader = new CombatLogReader(logsPath);
 
-await foreach (var line in combatLogTailer.ReadLinesAsync())
+await foreach (var line in combatLogReader.ReadLinesAsync())
 {
     await app.ProcessCombatLogLineAsync(line);
 }
