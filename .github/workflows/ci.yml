@@ -47,6 +47,8 @@ jobs:
             -p:DebugSymbols=false \
             --output "${{ runner.temp }}/publish-check"
 
+          ls -lh "${{ runner.temp }}/publish-check/WowStreamOverlay.exe"
+
       - name: Validate release notes script
         shell: pwsh
         run: |
