@@ -28,7 +28,10 @@ public class AddonManagerTests
         }
         finally
         {
-            Directory.Delete(rootPath, recursive: true);
+            if (Directory.Exists(rootPath))
+            {
+                Directory.Delete(rootPath, recursive: true);
+            }
         }
     }
 }
