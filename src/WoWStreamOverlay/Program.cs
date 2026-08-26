@@ -9,6 +9,12 @@ if (CommandLine.IsHelpRequest(args))
     return;
 }
 
+if (CommandLine.IsVersionRequest(args))
+{
+    CommandLine.PrintVersion();
+    return;
+}
+
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: false)
