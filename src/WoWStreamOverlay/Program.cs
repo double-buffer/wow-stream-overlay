@@ -92,7 +92,7 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-var webBuilder = WebApplication.CreateSlimBuilder();
+var webBuilder = WebApplication.CreateSlimBuilder(args);
 webBuilder.WebHost.UseUrls("http://127.0.0.1:37231");
 
 var webServer = webBuilder.Build();
