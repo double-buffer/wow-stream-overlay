@@ -27,7 +27,26 @@ public sealed record CharacterProfile(
     int ItemLevel,
     string? ClassName = null,
     string? SpecializationName = null,
-    string? RaceName = null);
+    string? RaceName = null)
+{
+    public string ClassColor => Class switch
+    {
+        CharacterClass.Warrior => "#C79C6E",
+        CharacterClass.Paladin => "#F48CBA",
+        CharacterClass.Hunter => "#AAD372",
+        CharacterClass.Rogue => "#FFF468",
+        CharacterClass.Priest => "#FFFFFF",
+        CharacterClass.DeathKnight => "#C41E3A",
+        CharacterClass.Shaman => "#0070DD",
+        CharacterClass.Mage => "#3FC7EB",
+        CharacterClass.Warlock => "#8788EE",
+        CharacterClass.Monk => "#00FF98",
+        CharacterClass.Druid => "#FF7C0A",
+        CharacterClass.DemonHunter => "#A330C9",
+        CharacterClass.Evoker => "#33937F",
+        _ => "#F4F4F5"
+    };
+}
 
 /// <summary>
 /// World of Warcraft playable character classes.
