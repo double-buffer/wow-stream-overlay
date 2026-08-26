@@ -151,11 +151,11 @@ public static class CommandLine
         {
             WriteStatus("Update", "Unknown");
         }
-        else if (bundledVersion > installedVersion)
+        else if (bundledVersion.Value > installedVersion.Value)
         {
             WriteStatus("Update", "Available");
         }
-        else if (bundledVersion == installedVersion)
+        else if (bundledVersion.Value == installedVersion.Value)
         {
             WriteStatus("Update", "Up to date");
         }
@@ -258,9 +258,9 @@ public static class CommandLine
         }
     }
 
-    private static string FormatVersion(Version? version)
+    private static string FormatVersion(ReleaseVersion? version)
     {
-        return version?.ToString(3) ?? "Unknown";
+        return version?.ToString() ?? "Unknown";
     }
 
     private static void WriteStatus(string label, string value)
