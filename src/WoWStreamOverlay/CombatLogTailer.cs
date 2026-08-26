@@ -21,11 +21,11 @@ public sealed class CombatLogTailer
     public async IAsyncEnumerable<string> ReadLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var currentPath = FindLatestLogFile();
-        var reader = currentPath is null ? null : OpenReader(currentPath, seekToEnd: true);
+        var reader = currentPath is null ? null : TryOpenReader(currentPath, seekToEnd: true);
         var buffer = new char[4096];
         var lineBuffer = new StringBuilder();
 
-        if (currentPath is not null)
+        if (reader is not null)
         {
             Console.WriteLine($"Following combat log: {Path.GetFileName(currentPath)}");
         }
@@ -46,7 +46,14 @@ public sealed class CombatLogTailer
                         continue;
                     }
 
-                    reader = OpenReader(currentPath, seekToEnd: false);
+                    reader = TryOpenReader(currentPath, seekToEnd: false);
+
+                    if (reader is null)
+                    {
+                        await Task.Delay(PollInterval, cancellationToken);
+                        continue;
+                    }
+
                     Console.WriteLine($"Following new combat log: {Path.GetFileName(currentPath)}");
                 }
 
@@ -91,12 +98,17 @@ public sealed class CombatLogTailer
 
                 if (latestPath is not null && !string.Equals(latestPath, currentPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    reader.Dispose();
-                    reader = OpenReader(latestPath, seekToEnd: false);
-                    currentPath = latestPath;
-                    lineBuffer.Clear();
-                    Console.WriteLine($"Following new combat log: {Path.GetFileName(currentPath)}");
-                    continue;
+                    var newReader = TryOpenReader(latestPath, seekToEnd: false);
+
+                    if (newReader is not null)
+                    {
+                        reader.Dispose();
+                        reader = newReader;
+                        currentPath = latestPath;
+                        lineBuffer.Clear();
+                        Console.WriteLine($"Following new combat log: {Path.GetFileName(currentPath)}");
+                        continue;
+                    }
                 }
 
                 await Task.Delay(PollInterval, cancellationToken);
@@ -141,15 +153,22 @@ public sealed class CombatLogTailer
         return latestPath;
     }
 
-    private static StreamReader OpenReader(string path, bool seekToEnd)
+    private static StreamReader? TryOpenReader(string path, bool seekToEnd)
     {
-        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.SequentialScan);
-
-        if (seekToEnd)
+        try
         {
-            stream.Seek(0, SeekOrigin.End);
-        }
+            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.SequentialScan);
 
-        return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: false);
+            if (seekToEnd)
+            {
+                stream.Seek(0, SeekOrigin.End);
+            }
+
+            return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: false);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
     }
 }
