@@ -1,6 +1,3 @@
-using System.Text.Encodings.Web;
-using System.Text.Json;
-
 namespace WowStreamOverlay;
 
 /// <summary>
@@ -8,13 +5,6 @@ namespace WowStreamOverlay;
 /// </summary>
 public sealed class GameStateStore
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
     private readonly string _path;
 
     public GameStateStore(string path)
@@ -30,7 +20,7 @@ public sealed class GameStateStore
         }
 
         await using var stream = File.OpenRead(_path);
-        var state = await JsonSerializer.DeserializeAsync<GameState>(stream, JsonOptions, cancellationToken) ?? new GameState();
+        var state = await GameStateJson.DeserializeAsync(stream, cancellationToken) ?? new GameState();
 
         state.MythicPlus = null;
         return state;
@@ -51,7 +41,7 @@ public sealed class GameStateStore
         {
             await using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await JsonSerializer.SerializeAsync(stream, state, JsonOptions, cancellationToken);
+                await GameStateJson.SerializeAsync(stream, state, indented: true, cancellationToken: cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
 
