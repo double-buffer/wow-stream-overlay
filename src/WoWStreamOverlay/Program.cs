@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using WowStreamOverlay;
 using WowStreamOverlay.CombatLog;
@@ -93,12 +90,7 @@ var app = new WoWStreamOverlayApp(
 
 await app.RefreshCharacterCacheAsync();
 
-var webBuilder = WebApplication.CreateSlimBuilder(args);
-webBuilder.WebHost.UseUrls("http://127.0.0.1:37231");
-
-var webServer = webBuilder.Build();
-webServer.MapGet("/api/state", () => Results.Text(GameStateSerializer.Serialize(app.State), "application/json"));
-
+var webServer = WebServer.Create(app.State);
 var combatLogReader = new CombatLogReader(logsPath);
 using var shutdown = new CancellationTokenSource();
 
