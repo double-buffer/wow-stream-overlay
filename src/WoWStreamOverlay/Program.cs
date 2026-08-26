@@ -92,32 +92,27 @@ await app.RefreshCharacterCacheAsync();
 
 var webServer = WebServer.Create(app.State);
 var combatLogReader = new CombatLogReader(logsPath);
-using var shutdown = new CancellationTokenSource();
+using var shutdownTokenSource = new CancellationTokenSource();
 
 Console.CancelKeyPress += (_, eventArgs) =>
 {
     eventArgs.Cancel = true;
-    shutdown.Cancel();
+    shutdownTokenSource.Cancel();
 };
 
-await webServer.StartAsync(shutdown.Token);
+await webServer.StartAsync(shutdownTokenSource.Token);
 
-var logTask = combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync, shutdown.Token);
-var serverTask = webServer.WaitForShutdownAsync(shutdown.Token);
+var logTask = combatLogReader.ProcessLogFilesAsync(app.ProcessCombatLogLineAsync, shutdownTokenSource.Token);
+var serverTask = webServer.WaitForShutdownAsync(shutdownTokenSource.Token);
 
 try
 {
     await Task.WhenAny(logTask, serverTask);
-}
-finally
-{
-    await shutdown.CancelAsync();
-}
 
-try
-{
+    shutdownTokenSource.Cancel();
+
     await Task.WhenAll(logTask, serverTask);
 }
-catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
+catch (OperationCanceledException) when (shutdownTokenSource.IsCancellationRequested)
 {
 }
