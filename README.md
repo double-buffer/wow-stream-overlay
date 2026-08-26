@@ -31,7 +31,7 @@ The application currently tracks the active character and Mythic+ state, persist
 - OBS Studio or another browser-source compatible application
 - Combat logging enabled in World of Warcraft
 
-Release packages are self-contained and do not require a separate .NET installation.
+Release packages are self-contained and do not require a separate .NET installation. The Windows executable is published as a trimmed, compressed single-file application to keep the distribution as small as possible while retaining the self-contained runtime.
 
 ## Installation
 
@@ -52,13 +52,13 @@ Example:
 4. Install the bundled WoW addon:
 
 ```text
-wow-stream-overlay addon install
+WowStreamOverlay addon install
 ```
 
 5. Start the application:
 
 ```text
-wow-stream-overlay
+WowStreamOverlay
 ```
 
 6. Add the overlay to OBS as a Browser Source.
@@ -82,9 +82,9 @@ src/Addon/WoWStreamOverlay/WoWStreamOverlay.toc
 Useful commands:
 
 ```text
-wow-stream-overlay addon install
-wow-stream-overlay addon update
-wow-stream-overlay addon uninstall
+WowStreamOverlay addon install
+WowStreamOverlay addon update
+WowStreamOverlay addon uninstall
 ```
 
 `addon update` compares the installed addon version with the bundled addon version and never intentionally downgrades a newer installed version.
@@ -150,13 +150,13 @@ Templates can use the runtime `data-field`, `data-visible-field`, and `data-colo
 ## Command line
 
 ```text
-wow-stream-overlay                  Run the application
-wow-stream-overlay status           Show configuration and runtime status
-wow-stream-overlay addon install    Install the bundled WoW addon
-wow-stream-overlay addon update     Update the installed WoW addon
-wow-stream-overlay addon uninstall  Uninstall the WoW addon
-wow-stream-overlay --version        Show the exact application build version
-wow-stream-overlay help             Show command help
+WowStreamOverlay                  Run the application
+WowStreamOverlay status           Show configuration and runtime status
+WowStreamOverlay addon install    Install the bundled WoW addon
+WowStreamOverlay addon update     Update the installed WoW addon
+WowStreamOverlay addon uninstall  Uninstall the WoW addon
+WowStreamOverlay --version        Show the exact application build version
+WowStreamOverlay help             Show command help
 ```
 
 `status` reports the configured WoW logs path, addon state and versions, Battle.net configuration state, web endpoint, overlay URLs, and local storage paths.
@@ -205,9 +205,9 @@ Every commit pushed to `main` is automatically built and published as a GitHub R
 The release workflow:
 
 1. restores, builds, and tests the solution;
-2. publishes a self-contained Windows x64 build;
-3. reads the exact version back from the published executable;
-4. packages the output as `wow-stream-overlay-v<version>-win-x64.zip`;
+2. publishes a self-contained, trimmed and compressed Windows x64 build;
+3. reads the exact version back from `WowStreamOverlay.exe`;
+4. packages the output as `WowStreamOverlay-v<version>-win-x64.zip`;
 5. creates the matching Git tag `v<version>` on the exact `main` commit;
 6. generates release notes from the pull requests associated with the release range;
 7. creates the GitHub Release and uploads the package.
