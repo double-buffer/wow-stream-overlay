@@ -32,7 +32,7 @@ public class WebServerTests
             MythicPlus = new MythicPlusState("Mists of Tirna Scithe", 11)
         };
 
-        var server = WebServer.Create(state, "http://127.0.0.1:0");
+        var server = WebServer.Create(state, host: "127.0.0.1", port: 0);
         await server.StartAsync();
 
         try
@@ -58,6 +58,7 @@ public class WebServerTests
             Assert.Equal(301, character.GetProperty("itemLevel").GetInt32());
             Assert.Equal("Guerrier", character.GetProperty("className").GetString());
             Assert.Equal("Protection", character.GetProperty("specializationName").GetString());
+            Assert.Equal("#C79C6E", character.GetProperty("classColor").GetString());
 
             var mythicPlus = root.GetProperty("mythicPlus");
             Assert.Equal("Mists of Tirna Scithe", mythicPlus.GetProperty("dungeonName").GetString());
@@ -74,14 +75,16 @@ public class WebServerTests
     public async Task GetOverlayReturnsConfiguredTemplateWithRuntime()
     {
         var templatePath = Path.Combine(Path.GetTempPath(), $"wow-stream-overlay-{Guid.NewGuid():N}.html");
-        await File.WriteAllTextAsync(templatePath, "<html><body><span data-field=\"character.name\"></span></body></html>");
+        await File.WriteAllTextAsync(
+            templatePath,
+            "<html><body><span data-field=\"character.name\" data-color-field=\"character.classColor\"></span></body></html>");
 
         var overlays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["header"] = templatePath
         };
 
-        var server = WebServer.Create(new GameState(), "http://127.0.0.1:0", overlays);
+        var server = WebServer.Create(new GameState(), host: "127.0.0.1", port: 0, overlays: overlays);
         await server.StartAsync();
 
         try
@@ -97,7 +100,9 @@ public class WebServerTests
             var html = await response.Content.ReadAsStringAsync();
 
             Assert.Contains("data-field=\"character.name\"", html);
+            Assert.Contains("data-color-field=\"character.classColor\"", html);
             Assert.Contains("fetch('/api/state')", html);
+            Assert.Contains("[data-color-field]", html);
             Assert.True(html.IndexOf("<script>", StringComparison.Ordinal) < html.IndexOf("</body>", StringComparison.OrdinalIgnoreCase));
         }
         finally
