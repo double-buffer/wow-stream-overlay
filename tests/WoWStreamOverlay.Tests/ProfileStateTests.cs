@@ -40,8 +40,8 @@ public class ProfileStateTests
 
         var html = OverlayRenderer.Render(template);
 
-        Assert.Contains("[data-hidden-field]", html);
+        Assert.Contains("[data-visible-field], [data-hidden-field]", html);
         Assert.Contains("element.dataset.hiddenField", html);
-        Assert.Contains("element.hidden = true", html);
+        Assert.Contains("element.hidden = !visible || hidden", html);
     }
 }
