@@ -69,7 +69,7 @@ public sealed class WoWStreamOverlayApp
                     stateChanged = true;
                 }
 
-                Console.WriteLine($"Refreshed character: {profile.Name}, Spec: {profile.Specialization}, iLvl: {profile.ItemLevel}");
+                Console.WriteLine($"Refreshed character: {FormatCharacterSummary(profile)}");
             }
             catch (HttpRequestException exception)
             {
@@ -151,9 +151,7 @@ public sealed class WoWStreamOverlayApp
 
             if (cachedCharacter is not null)
             {
-                Console.WriteLine(
-                    $"Found cached character: {cachedCharacter.Profile.Name}, Spec: {cachedCharacter.Profile.Specialization}, " +
-                    $"iLvl: {cachedCharacter.Profile.ItemLevel}");
+                Console.WriteLine($"Found cached character: {FormatCharacterSummary(cachedCharacter.Profile)}");
             }
         }
 
@@ -218,7 +216,7 @@ public sealed class WoWStreamOverlayApp
             await _gameStateStore.SaveAsync(_gameState, cancellationToken);
             _gameState.NotifyChanged();
 
-            Console.WriteLine($"Refreshed current character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
+            Console.WriteLine($"Refreshed current character: {FormatCharacterSummary(character)}");
         }
         catch (HttpRequestException exception)
         {
@@ -236,6 +234,18 @@ public sealed class WoWStreamOverlayApp
             SpecializationName = profile.SpecializationName ?? cachedProfile.SpecializationName,
             RaceName = profile.RaceName ?? cachedProfile.RaceName
         };
+    }
+
+    private static string FormatCharacterSummary(CharacterProfile profile)
+    {
+        var summary = $"{profile.Name}, Spec: {profile.Specialization}, iLvl: {profile.ItemLevel}";
+
+        if (profile.MythicPlusScore is int mythicPlusScore)
+        {
+            summary += $", M+ Score: {mythicPlusScore}";
+        }
+
+        return summary;
     }
 
     private static bool TryParsePlayerName(string value, out string characterName, out string realmName)
