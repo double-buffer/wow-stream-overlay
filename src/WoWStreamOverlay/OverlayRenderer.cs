@@ -21,17 +21,12 @@ public static class OverlayRenderer
             element.style.color = value == null ? '' : value;
         });
 
-        document.querySelectorAll('[data-visible-field]').forEach(element => {
-            const value = getValue(state, element.dataset.visibleField);
-            element.hidden = value == null;
-        });
-
-        document.querySelectorAll('[data-hidden-field]').forEach(element => {
-            const value = getValue(state, element.dataset.hiddenField);
-
-            if (value != null) {
-                element.hidden = true;
-            }
+        document.querySelectorAll('[data-visible-field], [data-hidden-field]').forEach(element => {
+            const visibleField = element.dataset.visibleField;
+            const hiddenField = element.dataset.hiddenField;
+            const visible = visibleField == null || getValue(state, visibleField) != null;
+            const hidden = hiddenField != null && getValue(state, hiddenField) != null;
+            element.hidden = !visible || hidden;
         });
     };
 
