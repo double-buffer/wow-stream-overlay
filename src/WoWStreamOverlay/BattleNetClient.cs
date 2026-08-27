@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace WowStreamOverlay;
 
-public sealed partial class BattleNetClient
+public sealed partial class BattleNetClient : ICharacterProfileProvider
 {
     private readonly HttpClient _httpClient;
     private readonly string _clientId;
@@ -16,6 +16,8 @@ public sealed partial class BattleNetClient
 
     private string? _accessToken;
     private DateTimeOffset _accessTokenExpiration;
+
+    public CharacterRefreshSource RefreshSource => CharacterRefreshSource.BattleNet;
 
     public BattleNetClient(
         HttpClient httpClient,

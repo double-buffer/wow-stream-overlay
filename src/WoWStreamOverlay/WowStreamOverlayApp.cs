@@ -8,7 +8,7 @@ public sealed class WoWStreamOverlayApp
 {
     private readonly CombatLogParser _parser;
     private readonly CharacterCache _characterCache;
-    private readonly BattleNetClient? _battleNetClient;
+    private readonly ICharacterProfileProvider? _characterProfileProvider;
     private readonly GameState _gameState;
     private readonly GameStateStore _gameStateStore;
     private readonly TimeSpan _characterRefreshInterval;
@@ -21,14 +21,14 @@ public sealed class WoWStreamOverlayApp
     public WoWStreamOverlayApp(
         CombatLogParser parser,
         CharacterCache characterCache,
-        BattleNetClient? battleNetClient,
+        ICharacterProfileProvider? characterProfileProvider,
         GameState gameState,
         GameStateStore gameStateStore,
         TimeSpan characterRefreshInterval)
     {
         _parser = parser;
         _characterCache = characterCache;
-        _battleNetClient = battleNetClient;
+        _characterProfileProvider = characterProfileProvider;
         _gameState = gameState;
         _gameStateStore = gameStateStore;
         _characterRefreshInterval = characterRefreshInterval;
@@ -36,7 +36,7 @@ public sealed class WoWStreamOverlayApp
 
     public async Task RefreshCharacterCacheAsync(CancellationToken cancellationToken = default)
     {
-        if (_battleNetClient is null)
+        if (_characterProfileProvider is null)
         {
             return;
         }
@@ -49,7 +49,7 @@ public sealed class WoWStreamOverlayApp
         {
             try
             {
-                var profile = await _battleNetClient.GetCharacterProfileAsync(
+                var profile = await _characterProfileProvider.GetCharacterProfileAsync(
                     cachedCharacter.Value.Profile.RealmSlug,
                     cachedCharacter.Value.Profile.Name,
                     cancellationToken);
@@ -59,7 +59,8 @@ public sealed class WoWStreamOverlayApp
                     continue;
                 }
 
-                _characterCache.Set(cachedCharacter.Key, profile, CharacterRefreshSource.BattleNet);
+                profile = PreserveUnavailableFields(profile, cachedCharacter.Value.Profile);
+                _characterCache.Set(cachedCharacter.Key, profile, _characterProfileProvider.RefreshSource);
                 cacheChanged = true;
 
                 if (string.Equals(_gameState.CurrentCharacterGuid, cachedCharacter.Key, StringComparison.OrdinalIgnoreCase))
@@ -68,11 +69,12 @@ public sealed class WoWStreamOverlayApp
                     stateChanged = true;
                 }
 
-                Console.WriteLine($"Refreshed character: {profile.Name}, Spec: {profile.Specialization}, iLvl: {profile.ItemLevel}");
+                Console.WriteLine($"Refreshed character: {FormatCharacterSummary(profile)}");
             }
             catch (HttpRequestException exception)
             {
-                Console.Error.WriteLine($"Battle.net refresh failed for {cachedCharacter.Value.Profile.Name}: {exception.Message}");
+                Console.Error.WriteLine(
+                    $"{_characterProfileProvider.RefreshSource} refresh failed for {cachedCharacter.Value.Profile.Name}: {exception.Message}");
             }
         }
 
@@ -149,13 +151,11 @@ public sealed class WoWStreamOverlayApp
 
             if (cachedCharacter is not null)
             {
-                Console.WriteLine(
-                    $"Found cached character: {cachedCharacter.Profile.Name}, Spec: {cachedCharacter.Profile.Specialization}, " +
-                    $"iLvl: {cachedCharacter.Profile.ItemLevel}");
+                Console.WriteLine($"Found cached character: {FormatCharacterSummary(cachedCharacter.Profile)}");
             }
         }
 
-        if (_battleNetClient is null)
+        if (_characterProfileProvider is null)
         {
             _nextCharacterRefresh = DateTimeOffset.MaxValue;
             return;
@@ -196,27 +196,56 @@ public sealed class WoWStreamOverlayApp
 
         try
         {
-            var character = await _battleNetClient!.GetCharacterProfileAsync(realmSlug, characterName, cancellationToken);
+            var character = await _characterProfileProvider!.GetCharacterProfileAsync(realmSlug, characterName, cancellationToken);
 
             if (character is null)
             {
-                Console.Error.WriteLine($"Character not found on Battle.net: {characterName}");
+                Console.Error.WriteLine($"Character not found by {_characterProfileProvider.RefreshSource}: {characterName}");
                 return;
             }
 
-            _characterCache.Set(playerObserved.Guid, character, CharacterRefreshSource.BattleNet);
+            if (cachedCharacter is not null)
+            {
+                character = PreserveUnavailableFields(character, cachedCharacter.Profile);
+            }
+
+            _characterCache.Set(playerObserved.Guid, character, _characterProfileProvider.RefreshSource);
             _gameState.Character = character;
 
             await _characterCache.SaveAsync(cancellationToken);
             await _gameStateStore.SaveAsync(_gameState, cancellationToken);
             _gameState.NotifyChanged();
 
-            Console.WriteLine($"Refreshed current character: {character.Name}, Spec: {character.Specialization}, iLvl: {character.ItemLevel}");
+            Console.WriteLine($"Refreshed current character: {FormatCharacterSummary(character)}");
         }
         catch (HttpRequestException exception)
         {
-            Console.Error.WriteLine($"Battle.net request failed: {exception.Message}");
+            Console.Error.WriteLine($"{_characterProfileProvider.RefreshSource} request failed: {exception.Message}");
         }
+    }
+
+    private static CharacterProfile PreserveUnavailableFields(CharacterProfile profile, CharacterProfile cachedProfile)
+    {
+        return profile with
+        {
+            Level = profile.Level > 0 ? profile.Level : cachedProfile.Level,
+            ItemLevel = profile.ItemLevel > 0 ? profile.ItemLevel : cachedProfile.ItemLevel,
+            ClassName = profile.ClassName ?? cachedProfile.ClassName,
+            SpecializationName = profile.SpecializationName ?? cachedProfile.SpecializationName,
+            RaceName = profile.RaceName ?? cachedProfile.RaceName
+        };
+    }
+
+    private static string FormatCharacterSummary(CharacterProfile profile)
+    {
+        var summary = $"{profile.Name}, Spec: {profile.Specialization}, iLvl: {profile.ItemLevel}";
+
+        if (profile.MythicPlusScore is int mythicPlusScore)
+        {
+            summary += $", M+ Score: {mythicPlusScore}";
+        }
+
+        return summary;
     }
 
     private static bool TryParsePlayerName(string value, out string characterName, out string realmName)
