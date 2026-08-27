@@ -10,7 +10,8 @@ namespace WowStreamOverlay;
 public enum CharacterRefreshSource
 {
     CombatLog,
-    BattleNet
+    BattleNet,
+    RaiderIO
 }
 
 /// <summary>
@@ -142,6 +143,10 @@ public sealed partial class CharacterCache
         public CharacterRace Race { get; init; }
         public int Level { get; init; }
         public int ItemLevel { get; init; }
+        public string? ClassName { get; init; }
+        public string? SpecializationName { get; init; }
+        public string? RaceName { get; init; }
+        public int? MythicPlusScore { get; init; }
         public DateTimeOffset LastRefresh { get; init; }
 
         [JsonConverter(typeof(JsonStringEnumConverter<CharacterRefreshSource>))]
@@ -150,7 +155,20 @@ public sealed partial class CharacterCache
         public CachedCharacter ToCachedCharacter()
         {
             return new CachedCharacter(
-                new CharacterProfile(Name, Realm, RealmSlug, Region, Class, Specialization, Race, Level, ItemLevel),
+                new CharacterProfile(
+                    Name,
+                    Realm,
+                    RealmSlug,
+                    Region,
+                    Class,
+                    Specialization,
+                    Race,
+                    Level,
+                    ItemLevel,
+                    ClassName,
+                    SpecializationName,
+                    RaceName,
+                    MythicPlusScore),
                 LastRefresh,
                 LastRefreshSource);
         }
@@ -168,6 +186,10 @@ public sealed partial class CharacterCache
                 Race = character.Profile.Race,
                 Level = character.Profile.Level,
                 ItemLevel = character.Profile.ItemLevel,
+                ClassName = character.Profile.ClassName,
+                SpecializationName = character.Profile.SpecializationName,
+                RaceName = character.Profile.RaceName,
+                MythicPlusScore = character.Profile.MythicPlusScore,
                 LastRefresh = character.LastRefresh,
                 LastRefreshSource = character.LastRefreshSource
             };
