@@ -63,10 +63,15 @@ await characterCache.LoadAsync();
 var gameStateStore = new GameStateStore(statePath);
 var gameState = await gameStateStore.LoadAsync();
 
-var clientId = configuration["BattleNet:ClientId"];
-var clientSecret = configuration["BattleNet:ClientSecret"];
-var region = configuration["BattleNet:Region"];
-var locale = configuration["BattleNet:Locale"];
+var characterProviderName = configuration["Character:Provider"];
+
+if (string.IsNullOrWhiteSpace(characterProviderName))
+{
+    characterProviderName = "BattleNet";
+}
+
+var region = configuration["Character:Region"] ?? configuration["BattleNet:Region"];
+var locale = configuration["Character:Locale"] ?? configuration["BattleNet:Locale"];
 
 if (string.IsNullOrWhiteSpace(region))
 {
@@ -79,28 +84,49 @@ if (string.IsNullOrWhiteSpace(locale))
 }
 
 var refreshIntervalSeconds = 60;
+var configuredRefreshInterval = configuration["Character:RefreshIntervalSeconds"]
+    ?? configuration["BattleNet:CharacterRefreshIntervalSeconds"];
 
-if (int.TryParse(configuration["BattleNet:CharacterRefreshIntervalSeconds"], out var configuredRefreshInterval) && configuredRefreshInterval > 0)
+if (int.TryParse(configuredRefreshInterval, out var parsedRefreshInterval) && parsedRefreshInterval > 0)
 {
-    refreshIntervalSeconds = configuredRefreshInterval;
+    refreshIntervalSeconds = parsedRefreshInterval;
 }
 
 using var httpClient = new HttpClient();
-BattleNetClient? battleNetClient = null;
+ICharacterProfileProvider? characterProfileProvider = null;
 
-if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+switch (characterProviderName.ToLowerInvariant())
 {
-    battleNetClient = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
-}
-else
-{
-    Console.WriteLine("Battle.net integration is not configured.");
+    case "battlenet":
+        var clientId = configuration["BattleNet:ClientId"];
+        var clientSecret = configuration["BattleNet:ClientSecret"];
+
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+        {
+            characterProfileProvider = new BattleNetClient(httpClient, clientId, clientSecret, region, locale);
+            Console.WriteLine("Character profile provider: Battle.net");
+        }
+        else
+        {
+            Console.WriteLine("Battle.net character profile provider is not configured.");
+        }
+        break;
+
+    case "raiderio":
+        characterProfileProvider = new RaiderIOClient(httpClient, region, locale);
+        Console.WriteLine("Character profile provider: Raider.IO");
+        break;
+
+    default:
+        Console.Error.WriteLine($"Error: Character:Provider is invalid: {characterProviderName}");
+        Console.Error.WriteLine("Supported providers: BattleNet, RaiderIO");
+        return;
 }
 
 var app = new WoWStreamOverlayApp(
     new CombatLogParser(),
     characterCache,
-    battleNetClient,
+    characterProfileProvider,
     gameState,
     gameStateStore,
     TimeSpan.FromSeconds(refreshIntervalSeconds));
