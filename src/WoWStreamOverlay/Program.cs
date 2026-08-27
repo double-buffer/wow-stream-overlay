@@ -98,6 +98,7 @@ ICharacterProfileProvider? characterProfileProvider = null;
 switch (characterProviderName.ToLowerInvariant())
 {
     case "battlenet":
+    {
         var clientId = configuration["BattleNet:ClientId"];
         var clientSecret = configuration["BattleNet:ClientSecret"];
 
@@ -111,10 +112,12 @@ switch (characterProviderName.ToLowerInvariant())
             Console.WriteLine("Battle.net character profile provider is not configured.");
         }
         break;
+    }
 
     case "raiderio":
         characterProfileProvider = new RaiderIOClient(httpClient, region, locale);
         Console.WriteLine("Character profile provider: Raider.IO");
+        Console.WriteLine("Character data provided by Raider.IO · https://raider.io");
         break;
 
     default:
