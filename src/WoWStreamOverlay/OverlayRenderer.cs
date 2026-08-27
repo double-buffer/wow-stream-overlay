@@ -25,6 +25,14 @@ public static class OverlayRenderer
             const value = getValue(state, element.dataset.visibleField);
             element.hidden = value == null;
         });
+
+        document.querySelectorAll('[data-hidden-field]').forEach(element => {
+            const value = getValue(state, element.dataset.hiddenField);
+
+            if (value != null) {
+                element.hidden = true;
+            }
+        });
     };
 
     const events = new EventSource('/events');
