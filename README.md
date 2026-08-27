@@ -24,6 +24,8 @@ OBS Browser Source
 
 The application currently tracks the active character and Mythic+ state, persists the latest known character information, and pushes live state changes to connected overlays through Server-Sent Events.
 
+Character profile information can be refreshed through either Battle.net or Raider.IO. The provider is selected explicitly in configuration so it can be changed without altering the overlay or combat-log path.
+
 ## Requirements
 
 - Windows 10 or Windows 11
@@ -100,12 +102,15 @@ The default configuration is stored in `appsettings.json`.
   "Wow": {
     "LogsPath": ""
   },
-  "BattleNet": {
-    "ClientId": "",
-    "ClientSecret": "",
+  "Character": {
+    "Provider": "BattleNet",
     "Region": "eu",
     "Locale": "fr_FR",
-    "CharacterRefreshIntervalSeconds": 60
+    "RefreshIntervalSeconds": 60
+  },
+  "BattleNet": {
+    "ClientId": "",
+    "ClientSecret": ""
   },
   "Storage": {
     "CharactersPath": "characters.json",
@@ -123,11 +128,38 @@ The default configuration is stored in `appsettings.json`.
 }
 ```
 
-### Battle.net
+### Character profile providers
 
-Battle.net integration uses Blizzard client credentials to refresh character profile information. It does not use player-account OAuth or enumerate characters from an account.
+`Character:Provider` selects the source used to refresh character profile data. Supported values are `BattleNet` and `RaiderIO`.
 
-If `BattleNet:ClientId` and `BattleNet:ClientSecret` are left empty, the application still runs but Battle.net profile refresh is disabled.
+Region, locale, and refresh interval are shared by both providers:
+
+```json
+"Character": {
+  "Provider": "RaiderIO",
+  "Region": "eu",
+  "Locale": "fr_FR",
+  "RefreshIntervalSeconds": 60
+}
+```
+
+Existing alpha configurations that still store `Region`, `Locale`, and `CharacterRefreshIntervalSeconds` under `BattleNet` remain supported as a compatibility fallback.
+
+#### Battle.net
+
+Battle.net uses Blizzard client credentials to refresh character profile information. It does not use player-account OAuth or enumerate characters from an account.
+
+If `BattleNet` is selected and `BattleNet:ClientId` or `BattleNet:ClientSecret` is empty, profile refresh is disabled while the rest of the application continues to run.
+
+#### Raider.IO
+
+Raider.IO uses the public anonymous character profile API and does not require credentials. The provider requests the current gear snapshot and current-season Mythic+ score in addition to the basic character profile.
+
+The default header displays the Raider.IO Mythic+ score while no key is active. An active key temporarily replaces the score with the live dungeon name and keystone level from the local combat log.
+
+Raider.IO profile strings are returned in English. The current `fr_FR` class, specialization, and race names are mapped locally; unsupported locales fall back to the API strings.
+
+Character data provided by [Raider.IO](https://raider.io/). WoW Stream Overlay is not affiliated with Raider.IO.
 
 ### Overlays
 
@@ -147,7 +179,7 @@ This becomes:
 http://127.0.0.1:37231/overlay/header
 ```
 
-Templates can use the runtime `data-field`, `data-visible-field`, and `data-color-field` attributes. The application injects the small client runtime used to receive live state updates through Server-Sent Events.
+Templates can use the runtime `data-field`, `data-visible-field`, `data-hidden-field`, and `data-color-field` attributes. The application injects the small client runtime used to receive live state updates through Server-Sent Events.
 
 ## Command line
 
@@ -161,7 +193,7 @@ WowStreamOverlay --version        Show the exact application build version
 WowStreamOverlay help             Show command help
 ```
 
-`status` reports the configured WoW logs path, addon state and versions, Battle.net configuration state, web endpoint, overlay URLs, and local storage paths.
+`status` reports the configured WoW logs path, addon state and versions, selected character profile provider, web endpoint, overlay URLs, and local storage paths. Raider.IO attribution is also shown when that provider is selected.
 
 The exact build version is intentionally visible in the application banner, `status`, and `--version` output so screenshots and logs can be tied back to a specific released build.
 
@@ -254,6 +286,7 @@ tests/
 - The project currently targets World of Warcraft Retail.
 - Combat log writes are buffered by World of Warcraft. In quiet open-world situations, a newly written event can take some time to appear on disk.
 - Active Mythic+ state is intentionally transient and is reset when the application restarts.
+- Character profile freshness depends on the selected external provider. Raider.IO support is being evaluated during the 1.0 alpha.
 - The default web server binds only to `127.0.0.1`.
 
 ## License
