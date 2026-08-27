@@ -37,7 +37,8 @@
         }
 
         .character,
-        .mythic-plus {
+        .mythic-plus,
+        .mythic-score {
             display: flex;
             align-items: baseline;
         }
@@ -55,7 +56,8 @@
             color: rgb(0, 129, 255);
         }
 
-        .mythic-plus {
+        .mythic-plus,
+        .mythic-score {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
@@ -74,6 +76,12 @@
             <span data-color-field="character.classColor"><span data-field="character.className"></span> <span data-field="character.specializationName"></span></span>
             <span class="separator">·</span>
             <span>iLvl: <span class="item-level-value" data-field="character.itemLevel"></span></span>
+        </div>
+
+        <div class="mythic-score" data-visible-field="character.mythicPlusScore" data-hidden-field="mythicPlus" hidden>
+            <span>Mythic+</span>
+            <span class="separator">·</span>
+            <span class="mythic-level" data-field="character.mythicPlusScore"></span>
         </div>
 
         <div class="mythic-plus" data-visible-field="mythicPlus" hidden>
