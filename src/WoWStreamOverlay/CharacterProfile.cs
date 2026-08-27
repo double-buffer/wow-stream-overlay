@@ -5,16 +5,17 @@ namespace WowStreamOverlay;
 /// </summary>
 /// <param name="Name">Character name.</param>
 /// <param name="Realm">Realm display name.</param>
-/// <param name="RealmSlug">Realm slug used by the Battle.net API.</param>
-/// <param name="Region">Battle.net region.</param>
+/// <param name="RealmSlug">Realm slug used by character profile providers.</param>
+/// <param name="Region">World of Warcraft region.</param>
 /// <param name="Class">Character class.</param>
 /// <param name="Specialization">Active character specialization.</param>
 /// <param name="Race">Character race.</param>
-/// <param name="Level">Character level.</param>
+/// <param name="Level">Character level when provided by the selected profile provider.</param>
 /// <param name="ItemLevel">Equipped item level.</param>
 /// <param name="ClassName">Localized character class name.</param>
 /// <param name="SpecializationName">Localized active specialization name.</param>
 /// <param name="RaceName">Localized character race name.</param>
+/// <param name="MythicPlusScore">Current Mythic+ season score when provided by the selected profile provider.</param>
 public sealed record CharacterProfile(
     string Name,
     string Realm,
@@ -27,7 +28,8 @@ public sealed record CharacterProfile(
     int ItemLevel,
     string? ClassName = null,
     string? SpecializationName = null,
-    string? RaceName = null)
+    string? RaceName = null,
+    int? MythicPlusScore = null)
 {
     public string ClassColor => Class switch
     {
