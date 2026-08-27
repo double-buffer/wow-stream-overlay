@@ -70,16 +70,46 @@ public static class CommandLine
         WriteStatus("Logs", string.IsNullOrWhiteSpace(logsPath) ? "Not configured" : logsPath);
         WriteAddonStatus(logsPath);
 
-        var clientId = configuration["BattleNet:ClientId"];
-        var clientSecret = configuration["BattleNet:ClientSecret"];
-        var region = configuration["BattleNet:Region"] ?? "eu";
-        var locale = configuration["BattleNet:Locale"] ?? "fr_FR";
+        var provider = configuration["Character:Provider"];
+
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            provider = "BattleNet";
+        }
+
+        var region = configuration["Character:Region"] ?? configuration["BattleNet:Region"] ?? "eu";
+        var locale = configuration["Character:Locale"] ?? configuration["BattleNet:Locale"] ?? "fr_FR";
+        var refreshInterval = configuration["Character:RefreshIntervalSeconds"]
+            ?? configuration["BattleNet:CharacterRefreshIntervalSeconds"]
+            ?? "60";
 
         Console.WriteLine();
-        Console.WriteLine("Battle.net");
-        WriteStatus("Integration", !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret) ? "Configured" : "Not configured");
+        Console.WriteLine("Character profile");
+        WriteStatus("Provider", provider);
         WriteStatus("Region", region);
         WriteStatus("Locale", locale);
+        WriteStatus("Refresh", $"{refreshInterval} seconds");
+
+        if (provider.Equals("BattleNet", StringComparison.OrdinalIgnoreCase))
+        {
+            var clientId = configuration["BattleNet:ClientId"];
+            var clientSecret = configuration["BattleNet:ClientSecret"];
+
+            Console.WriteLine();
+            Console.WriteLine("Battle.net");
+            WriteStatus(
+                "Integration",
+                !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret)
+                    ? "Configured"
+                    : "Not configured");
+        }
+        else if (provider.Equals("RaiderIO", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine();
+            Console.WriteLine("Raider.IO");
+            WriteStatus("Integration", "Anonymous API");
+            WriteStatus("Website", "https://raider.io");
+        }
 
         var host = configuration["Web:Host"];
 
