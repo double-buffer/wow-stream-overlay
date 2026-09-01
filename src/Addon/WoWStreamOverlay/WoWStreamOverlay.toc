@@ -1,6 +1,6 @@
 ## Interface: 120100
 ## Title: WoW Stream Overlay
 ## Notes: Provides character detection support for WoW Stream Overlay.
-## Version: 1.0.0
+## Version: 1.0.1
 
 WoWStreamOverlay.lua
